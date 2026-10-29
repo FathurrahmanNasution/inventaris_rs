@@ -40,7 +40,7 @@ router.get('/', serveView('home.html', 'Homepage'));
 // 2. Register Page (Tetap dipertahankan)
 router.get('/register', serveView('register.html', 'Halaman Register'));
 
-// 3. Login Page (Placeholder handover untuk tim frontend login)
+// 3. Login Page
 router.get('/login', serveView('login.html', 'Halaman Login'));
 
 // 4. Dashboard Page (Tetap dipertahankan)

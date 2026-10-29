@@ -14,6 +14,36 @@ const { query } = require('../config/db');
 
 // Role yang diizinkan sesuai spesifikasi SRS
 const ALLOWED_ROLES = ['admin', 'gudang', 'pelayanan', 'kepala_farmasi'];
+const USERNAME_PATTERN = /^[a-z0-9._-]{3,50}$/;
+const LOGIN_FAILURE_LIMIT = 5;
+const LOGIN_LOCKOUT_MS = 15 * 60 * 1000;
+const loginFailures = new Map();
+
+function getLoginAttemptKey(username, ipAddress) {
+  return `${ipAddress || 'unknown'}:${username}`;
+}
+
+function isLoginLocked(username, ipAddress) {
+  const attempt = loginFailures.get(getLoginAttemptKey(username, ipAddress));
+  if (!attempt) return false;
+  if (attempt.lockedUntil > Date.now()) return true;
+  loginFailures.delete(getLoginAttemptKey(username, ipAddress));
+  return false;
+}
+
+function recordLoginFailure(username, ipAddress) {
+  const key = getLoginAttemptKey(username, ipAddress);
+  const current = loginFailures.get(key) || { count: 0, lockedUntil: 0 };
+  current.count += 1;
+  if (current.count >= LOGIN_FAILURE_LIMIT) {
+    current.lockedUntil = Date.now() + LOGIN_LOCKOUT_MS;
+  }
+  loginFailures.set(key, current);
+}
+
+function clearLoginFailures(username, ipAddress) {
+  loginFailures.delete(getLoginAttemptKey(username, ipAddress));
+}
 
 /**
  * 1. Mengambil data user berdasarkan username
@@ -21,7 +51,9 @@ const ALLOWED_ROLES = ['admin', 'gudang', 'pelayanan', 'kepala_farmasi'];
  * @returns {Promise<Object|null>} data user atau null jika tidak ditemukan
  */
 async function findUserByUsername(username) {
-  if (!username) return null;
+  if (typeof username !== 'string' || !USERNAME_PATTERN.test(username.trim().toLowerCase())) {
+    return null;
+  }
   const result = await query(
     'SELECT user_id, username, password_hash, role, status, created_at FROM users WHERE username = $1',
     [username.trim().toLowerCase()]
@@ -146,8 +178,12 @@ async function registerUser({ username, password, confirmPassword, role }, ipAdd
 
   const cleanUsername = username.trim().toLowerCase();
 
-  if (password.length < 6) {
-    throw new Error('Password minimal terdiri dari 6 karakter.');
+  if (!USERNAME_PATTERN.test(cleanUsername)) {
+    throw new Error('Username hanya boleh berisi 3-50 karakter: huruf kecil, angka, titik, garis bawah, atau tanda hubung.');
+  }
+
+  if (typeof password !== 'string' || password.length < 8) {
+    throw new Error('Password minimal terdiri dari 8 karakter.');
   }
 
   if (confirmPassword && password !== confirmPassword) {
@@ -193,15 +229,22 @@ async function registerUser({ username, password, confirmPassword, role }, ipAdd
  * @returns {Promise<{ user: Object, token: string }>}
  */
 async function loginUser({ username, password }, ipAddress = null) {
-  if (!username || !password) {
+  if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
     throw new Error('Username dan password wajib diisi.');
   }
 
   const cleanUsername = username.trim().toLowerCase();
+  if (!USERNAME_PATTERN.test(cleanUsername)) {
+    throw new Error('Username atau kata sandi tidak valid.');
+  }
+  if (isLoginLocked(cleanUsername, ipAddress)) {
+    throw new Error('Terlalu banyak percobaan login. Silakan coba lagi dalam 15 menit.');
+  }
 
   // 1. Cari data user
   const user = await findUserByUsername(cleanUsername);
   if (!user) {
+    recordLoginFailure(cleanUsername, ipAddress);
     await writeAuditLog(null, `login_failed: user_not_found (${cleanUsername})`, ipAddress);
     throw new Error('Username atau kata sandi tidak valid.');
   }
@@ -209,6 +252,7 @@ async function loginUser({ username, password }, ipAddress = null) {
   // 2. Periksa status keaktifan user
   const statusCheck = checkUserStatus(user);
   if (!statusCheck.isValid) {
+    recordLoginFailure(cleanUsername, ipAddress);
     await writeAuditLog(user.user_id, `login_rejected: account_inactive (${cleanUsername})`, ipAddress);
     throw new Error(statusCheck.message);
   }
@@ -216,11 +260,13 @@ async function loginUser({ username, password }, ipAddress = null) {
   // 3. Validasi password hash
   const isMatch = await validatePassword(password, user.password_hash);
   if (!isMatch) {
+    recordLoginFailure(cleanUsername, ipAddress);
     await writeAuditLog(user.user_id, `login_failed: wrong_password (${cleanUsername})`, ipAddress);
     throw new Error('Username atau kata sandi tidak valid.');
   }
 
   // 4. Terbitkan JWT Token
+  clearLoginFailures(cleanUsername, ipAddress);
   const token = createJwtToken(user);
 
   // 5. Catat log keberhasilan login

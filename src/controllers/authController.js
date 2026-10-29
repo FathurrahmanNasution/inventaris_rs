@@ -43,19 +43,20 @@ async function login(req, res) {
       ipAddress
     );
 
-    // Set cookie untuk memudahkan pengetesan di browser
+    // Simpan token di cookie HttpOnly agar tidak dapat dibaca JavaScript.
     res.cookie('token', token, {
-      httpOnly: false, // agar frontend/script dapat membaca atau menggunakan Authorization header
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
       maxAge: 8 * 60 * 60 * 1000, // 8 jam
-      sameSite: 'lax'
+      sameSite: 'lax',
+      path: '/'
     });
 
     return res.status(200).json({
       success: true,
       message: 'Login berhasil.',
       data: {
-        user,
-        token
+        user
       }
     });
   } catch (error) {
@@ -71,7 +72,12 @@ async function login(req, res) {
  * POST /api/auth/logout
  */
 async function logout(req, res) {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/'
+  });
   return res.status(200).json({
     success: true,
     message: 'Logout berhasil. Sesi telah diakhiri.'

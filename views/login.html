@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Inventaris Stok Obat RS</title>
+  <style>
+    :root { color-scheme: light; font-family: Arial, sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #eff6ff; color: #0f172a; }
+    .card { width: min(100%, 420px); padding: 32px; background: white; border: 1px solid #dbeafe; border-radius: 14px; box-shadow: 0 12px 30px rgba(15, 23, 42, .08); }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .brand-mark { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; background: #0369a1; color: white; font-size: 23px; }
+    h1 { margin: 0; font-size: 22px; color: #075985; }
+    .subtitle { margin: 4px 0 0; color: #64748b; font-size: 13px; }
+    .form-group { margin: 18px 0; }
+    label { display: block; margin-bottom: 7px; font-size: 14px; font-weight: 700; }
+    input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 7px; font-size: 15px; }
+    input:focus { outline: 3px solid #bae6fd; border-color: #0284c7; }
+    input[aria-invalid="true"] { border-color: #dc2626; }
+    button { width: 100%; padding: 12px; border: 0; border-radius: 7px; background: #0284c7; color: white; font-size: 15px; font-weight: 700; cursor: pointer; }
+    button:hover { background: #0369a1; }
+    button:disabled { cursor: wait; opacity: .7; }
+    .message { display: none; padding: 11px 12px; border-radius: 7px; font-size: 14px; line-height: 1.4; }
+    .message.error { display: block; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .help, .footer { color: #64748b; font-size: 12px; line-height: 1.45; }
+    .help { margin: 7px 0 0; }
+    .footer { margin: 22px 0 0; text-align: center; }
+    a { color: #0369a1; text-decoration: none; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">+</div>
+      <div>
+        <h1>Inventaris Obat RS</h1>
+        <p class="subtitle">Masuk ke sistem inventaris farmasi</p>
+      </div>
+    </div>
+
+    <div id="message" class="message" role="alert" aria-live="polite"></div>
+    <form id="loginForm" novalidate>
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username"
+          autocapitalize="none" spellcheck="false" maxlength="50" required>
+        <p class="help">Gunakan 3-50 karakter: huruf kecil, angka, titik, garis bawah, atau tanda hubung.</p>
+      </div>
+      <div class="form-group">
+        <label for="password">Kata sandi</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button id="submitButton" type="submit">Masuk</button>
+    </form>
+    <p class="footer"><a href="/">&larr; Kembali ke beranda</a></p>
+  </main>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const message = document.getElementById('message');
+    const submitButton = document.getElementById('submitButton');
+    const usernamePattern = /^[a-z0-9._-]{3,50}$/;
+
+    function showError(text) {
+      message.textContent = text;
+      message.className = 'message error';
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const username = usernameInput.value.trim().toLowerCase();
+      const password = passwordInput.value;
+      usernameInput.setAttribute('aria-invalid', String(!usernamePattern.test(username)));
+
+      if (!usernamePattern.test(username)) {
+        showError('Username tidak valid. Periksa format username Anda.');
+        usernameInput.focus();
+        return;
+      }
+      if (!password) {
+        showError('Kata sandi wajib diisi.');
+        passwordInput.focus();
+        return;
+      }
+
+      submitButton.disabled = true;
+      submitButton.textContent = 'Memeriksa...';
+      message.className = 'message';
+      try {
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ username, password })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+          showError(result.message || 'Login gagal. Periksa kembali kredensial Anda.');
+          return;
+        }
+        window.location.assign('/dashboard');
+      } catch (error) {
+        showError('Tidak dapat terhubung ke server. Silakan coba lagi.');
+      } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Masuk';
+      }
+    });
+  </script>
+</body>
+</html>
