@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register - Inventaris Stok Obat RS</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; background: #f8fafc; color: #1e293b; }
+    .box { max-width: 450px; margin: 0 auto; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h2 { margin-top: 0; color: #16a34a; font-size: 22px; }
+    .form-group { margin-bottom: 14px; }
+    label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 5px; box-sizing: border-box; font-size: 14px; }
+    button { width: 100%; padding: 12px; background: #16a34a; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 15px; margin-top: 8px; }
+    button:hover { background: #15803d; }
+    .msg { margin-bottom: 15px; padding: 12px; border-radius: 5px; font-size: 14px; display: none; }
+    .msg-error { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; display: block; }
+    .msg-success { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; display: block; }
+    .footer-links { margin-top: 18px; text-align: center; font-size: 14px; }
+    .footer-links a { color: #0284c7; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Daftar Akun Staf Baru</h2>
+    <div id="alertBox" class="msg"></div>
+    <form id="registerForm">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="username" required placeholder="Contoh: budi_farmasi">
+      </div>
+      <div class="form-group">
+        <label>Kata Sandi</label>
+        <input type="password" id="password" required placeholder="Minimal 6 karakter">
+      </div>
+      <div class="form-group">
+        <label>Konfirmasi Kata Sandi</label>
+        <input type="password" id="confirmPassword" required placeholder="Ketik ulang kata sandi">
+      </div>
+      <div class="form-group">
+        <label>Peran (Role Sistem)</label>
+        <select id="role">
+          <option value="pelayanan">Apoteker / Staf Pelayanan Farmasi</option>
+          <option value="gudang">Staf Gudang Farmasi</option>
+          <option value="kepala_farmasi">Kepala Instalasi Farmasi</option>
+          <option value="admin">Administrator IT</option>
+        </select>
+      </div>
+      <button type="submit" id="btnSubmit">Daftarkan Akun</button>
+    </form>
+    <div class="footer-links">
+      <p>Sudah memiliki akun? <a href="/login">Login di sini</a></p>
+      <p><a href="/">&larr; Kembali ke Beranda</a></p>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('registerForm');
+    const alertBox = document.getElementById('alertBox');
+    const btnSubmit = document.getElementById('btnSubmit');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Memproses...';
+
+      alertBox.className = 'msg';
+      alertBox.style.display = 'none';
+
+      const payload = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value,
+        confirmPassword: document.getElementById('confirmPassword').value,
+        role: document.getElementById('role').value
+      };
+
+      try {
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          alertBox.className = 'msg msg-success';
+          alertBox.textContent = data.message + ' Mengarahkan ke halaman login...';
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 1500);
+        } else {
+          alertBox.className = 'msg msg-error';
+          alertBox.textContent = data.message || 'Registrasi gagal.';
+          btnSubmit.disabled = false;
+          btnSubmit.textContent = 'Daftarkan Akun';
+        }
+      } catch (err) {
+        alertBox.className = 'msg msg-error';
+        alertBox.textContent = 'Koneksi error: ' + err.message;
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Daftarkan Akun';
+      }
+    });
+  </script>
+</body>
+</html>
