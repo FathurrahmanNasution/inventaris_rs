@@ -5,71 +5,143 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Manajemen Pengguna - Inventaris Obat RS</title>
   <style>
+    :root {
+      --navy: #1a365d; --sidebar: #2c3e5a; --sidebar-active: #4a5a74; --sidebar-text: #a9b4c6; --brand: #63b3ed;
+      --th-bg: #edf2f7; --border: #cbd5e0; --row-line: #e2e8f0; --text: #2d3748; --muted: #4a5568;
+      --blue: #2b6cb0; --link: #3182ce; --active-text: #22543d;
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #f1f5f9; color: #1e293b; }
-    header { background: #0f172a; color: white; padding: 20px max(20px, calc((100vw - 1160px)/2)); display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
-    header strong { font-size: 18px; } header small { display: block; margin-top: 6px; color: #cbd5e1; }
-    nav { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; } nav a { color: white; font-size: 14px; }
-    main { max-width: 1200px; margin: 28px auto; padding: 0 20px; }
-    h1 { font-size: 26px; margin-bottom: 8px; } h2 { font-size: 20px; margin: 0; }
-    p { color: #64748b; line-height: 1.5; }
-    .card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; margin: 20px 0; }
+    body { margin: 0; font-family: "Segoe UI", Verdana, Arial, sans-serif; background: #fff; color: var(--text); }
+    .window { display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* Title bar */
+    header { background: var(--navy); color: #fff; min-height: 80px; padding: 12px 28px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+    header h1 { margin: 0; font-size: 19px; text-align: center; }
+    .account { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap; }
+    #identity { font-size: 13px; color: #cbd5e0; }
+    nav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    nav a { color: #fff; font-size: 13px; }
+
+    /* Layout */
+    .body { display: flex; flex: 1; }
+    aside { width: 265px; flex-shrink: 0; background: var(--sidebar); padding: 20px 14px; }
+    .brand { color: var(--brand); font-weight: 700; font-size: 17px; padding: 6px 14px 22px; letter-spacing: .3px; }
+    aside a { display: block; color: var(--sidebar-text); text-decoration: none; font-size: 15px; padding: 18px 22px; border-radius: 4px; }
+    aside a.active { background: var(--sidebar-active); color: #fff; }
+    main { flex: 1; min-width: 0; padding: 22px 44px 44px; }
+
+    h1.page { }
+    h2 { font-size: 20px; margin: 0; color: var(--navy); }
+    .page-title { font-size: 26px; font-weight: 700; color: var(--navy); margin: 0 0 8px; }
+    p { color: var(--muted); line-height: 1.5; }
+    .card { background: #fff; padding: 0; margin: 28px 0; }
     .toolbar { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
     .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
     label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 7px; }
-    input, select { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; font: inherit; max-width: 100%; background: white; }
-    input:focus, select:focus, button:focus-visible, a:focus-visible { outline: 3px solid #bae6fd; outline-offset: 2px; }
-    button { border: 0; border-radius: 6px; padding: 10px 14px; background: #0284c7; color: white; cursor: pointer; font-weight: bold; }
+    input, select { border: 1px solid var(--border); border-radius: 4px; padding: 10px; font: inherit; max-width: 100%; background: #fff; color: var(--text); }
+    input:focus, select:focus, button:focus-visible, a:focus-visible { outline: 3px solid #bee3f8; outline-offset: 2px; }
+    button { border: 0; border-radius: 3px; padding: 10px 14px; background: var(--blue); color: #fff; cursor: pointer; font-weight: bold; font-family: inherit; }
     button:hover { filter: brightness(.92); } button:disabled { opacity: .55; cursor: not-allowed; }
-    .secondary { color: #334155; background: #e2e8f0; } .danger { color: #991b1b; background: #fee2e2; }
+    #addUser { padding: 18px 0; width: 260px; font-size: 15px; }
+    .secondary { color: var(--text); background: var(--th-bg); } .danger { color: #9b2c2c; background: #fed7d7; }
+
+    /* Tables */
     .table-wrap { overflow-x: auto; } table { width: 100%; min-width: 680px; border-collapse: collapse; text-align: left; }
-    th { font-size: 12px; text-transform: uppercase; background: #f8fafc; color: #475569; }
-    th, td { padding: 14px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
-    td.actions { white-space: nowrap; } td button { padding: 7px 10px; margin: 2px; }
-    .badge { display: inline-block; border-radius: 20px; padding: 5px 9px; font-size: 12px; background: #dcfce7; color: #166534; }
-    .inactive { background: #f1f5f9; color: #475569; }
-    .message { padding: 12px; border-radius: 6px; margin: 14px 0; background: #dcfce7; color: #166534; }
-    .message.error { background: #fef2f2; color: #991b1b; }
-    [hidden] { display: none !important; } .muted { color: #64748b; font-size: 13px; }
+    th { font-size: 15px; font-weight: 700; background: var(--th-bg); color: var(--text); border-top: 2px solid var(--border); border-bottom: 2px solid var(--border); padding: 22px 12px; }
+    th:first-child { border-left: 2px solid var(--border); padding-left: 24px; }
+    th:last-child { border-right: 2px solid var(--border); }
+    td { padding: 20px 12px; border-bottom: 1px solid var(--row-line); font-size: 14px; color: var(--muted); }
+    td:first-child { padding-left: 24px; }
+    #usersBody td:first-child { font-weight: 700; color: var(--text); font-size: 15px; }
+    td.actions { white-space: nowrap; }
+
+    /* Role badges */
+    .role { display: inline-block; min-width: 170px; padding: 9px 12px; border-radius: 3px; font-size: 13px; font-weight: 700; text-align: center; background: var(--th-bg); color: var(--text); }
+    .role-kepala_farmasi { background: #fefcbf; color: #744210; }
+    .role-pelayanan { background: #ebf8ff; color: var(--blue); }
+    .role-gudang { background: var(--th-bg); color: var(--text); }
+    .role-admin { background: #e9d8fd; color: #553c9a; }
+
+    /* Status as bold text */
+    .badge { display: inline-block; padding: 0; font-size: 14px; font-weight: 700; background: none; color: var(--active-text); }
+    .inactive { background: none; color: #718096; }
+
+    /* Action buttons as links: Edit | Reset Sandi */
+    td button { background: none; color: var(--link); padding: 2px 6px; margin: 0; font-size: 13px; }
+    td button.danger { color: var(--link); background: none; }
+    td button:hover { text-decoration: underline; filter: none; }
+    td button + button::before { content: "|"; color: var(--link); margin-right: 10px; margin-left: -4px; font-weight: normal; text-decoration: none; display: inline-block; }
+
+    .message { padding: 12px; border-radius: 4px; margin: 14px 0; background: #c6f6d5; color: var(--active-text); }
+    .message.error { background: #fed7d7; color: #9b2c2c; }
+    [hidden] { display: none !important; } .muted { color: #718096; font-size: 13px; }
     .pagination { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
-    dialog { width: min(480px, calc(100% - 32px)); max-height: 90vh; border: 0; border-radius: 12px; padding: 26px; color: #1e293b; }
-    dialog::backdrop { background: #0f172a99; } dialog input, dialog select { width: 100%; }
+
+    /* Dialogs */
+    dialog { width: min(480px, calc(100% - 32px)); max-height: 90vh; border: 0; border-radius: 8px; padding: 26px; color: var(--text); }
+    dialog::backdrop { background: #1a365d99; } dialog input, dialog select { width: 100%; }
+    dialog h2 { color: var(--navy); }
     .field { margin: 18px 0; } .dialog-actions { display: flex; justify-content: end; gap: 10px; margin-top: 22px; }
     .log-action { overflow-wrap: anywhere; min-width: 200px; }
-    @media(max-width: 600px) { .card { padding: 16px; } h1 { font-size: 22px; } .filters, .filters > div { width: 100%; } .filters input, .filters select { width: 100%; } }
+
+    @media (max-width: 900px) {
+      header { grid-template-columns: 1fr; text-align: center; } .account { justify-content: center; }
+      .body { flex-direction: column; } aside { width: 100%; display: flex; flex-wrap: wrap; align-items: center; padding: 10px; }
+      .brand { padding: 6px 14px; } aside a { padding: 10px 14px; }
+      main { padding: 20px; }
+    }
+    @media (max-width: 600px) { .page-title { font-size: 22px; } .filters, .filters > div { width: 100%; } .filters input, .filters select { width: 100%; } #addUser { width: 100%; } }
   </style>
 </head>
 <body>
-  <header>
-    <div><strong>Inventaris Obat RS</strong><small id="identity">Memuat sesi...</small></div>
-    <nav aria-label="Navigasi akun"><a href="/dashboard">Dashboard</a><a href="/account/password">Ganti Kata Sandi</a><button id="logout" class="secondary">Logout</button></nav>
-  </header>
-  <main>
-    <h1>Manajemen Pengguna</h1>
-    <p>Kelola akun staf, hak akses, dan aktivitas pengguna.</p>
-    <div id="message" class="message" role="status" aria-live="polite" hidden></div>
-    <section class="card" aria-labelledby="usersTitle">
-      <div class="toolbar"><div><h2 id="usersTitle">Akun pengguna</h2><p class="muted" id="userCount">Memuat pengguna...</p></div><button id="addUser" disabled>+ Tambah Pengguna</button></div>
-      <div class="toolbar">
-        <div class="filters">
-          <div><label for="userSearch">Cari username</label><input id="userSearch" type="search" placeholder="Ketik username" maxlength="50"></div>
-          <div><label for="roleFilter">Peran</label><select id="roleFilter"><option value="">Semua peran</option><option value="admin">Administrator IT</option><option value="gudang">Staf Gudang</option><option value="pelayanan">Apoteker Pelayanan</option><option value="kepala_farmasi">Kepala Farmasi</option></select></div>
-          <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="">Semua status</option><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></div>
-        </div>
-        <button id="reloadUsers" class="secondary">Muat Ulang</button>
+  <div class="window">
+    <header>
+      <span></span>
+      <h1>Sistem Inventaris Stok Obat RS - Manajemen Pengguna &amp; Hak Akses RBAC</h1>
+      <div class="account">
+        <small id="identity">Memuat sesi...</small>
+        <nav aria-label="Navigasi akun"><a href="/dashboard">Dashboard</a><a href="/account/password">Ganti Kata Sandi</a><button id="logout" class="secondary">Logout</button></nav>
       </div>
-      <div class="table-wrap"><table><thead><tr><th>Username</th><th>Peran</th><th>Status</th><th>Dibuat</th><th>Tindakan</th></tr></thead><tbody id="usersBody"><tr><td colspan="5">Memuat...</td></tr></tbody></table></div>
-      <div class="pagination"><button id="prevUsers" class="secondary" disabled>Sebelumnya</button><span id="userPage" aria-live="polite">Halaman 1</span><button id="nextUsers" class="secondary" disabled>Berikutnya</button></div>
-    </section>
-    <section class="card" aria-labelledby="logsTitle">
-      <div class="toolbar"><h2 id="logsTitle">Log aktivitas</h2><span class="muted">50 aktivitas per halaman</span></div>
-      <form id="logFilter" class="filters"><div><label for="logSearch">Cari pengguna, aktivitas, atau IP</label><input id="logSearch" type="search" maxlength="100" placeholder="Contoh: reset_password"></div><button type="submit">Tampilkan Log</button></form>
-      <p class="muted">Waktu ditampilkan sesuai waktu lokal browser.</p>
-      <div id="logError" class="message error" role="alert" hidden></div>
-      <div class="table-wrap"><table><thead><tr><th>Waktu</th><th>Pengguna</th><th>Aktivitas</th><th>Alamat IP</th></tr></thead><tbody id="logsBody"><tr><td colspan="4">Memuat...</td></tr></tbody></table></div>
-      <div class="pagination"><button id="prevLogs" class="secondary" disabled>Sebelumnya</button><span id="logPage">Halaman 1</span><button id="nextLogs" class="secondary" disabled>Berikutnya</button></div>
-    </section>
-  </main>
+    </header>
+    <div class="body">
+      <aside aria-label="Menu utama">
+        <div class="brand">RS INVENTARIS</div>
+        <a href="/dashboard">Dashboard</a>
+        <a href="#">Data Obat</a>
+        <a href="#">Stok Masuk</a>
+        <a href="#">Stok Keluar</a>
+        <a href="#">Monitoring</a>
+        <a href="#">Laporan</a>
+        <a href="#" class="active" aria-current="page">Pengguna</a>
+      </aside>
+      <main>
+        <h2 class="page-title">Manajemen Akun Pengguna &amp; Role-Based Access Control</h2>
+        <p>Kelola akun staf, hak akses, dan aktivitas pengguna.</p>
+        <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+        <section class="card" aria-labelledby="usersTitle">
+          <div class="toolbar"><div><h2 id="usersTitle">Akun pengguna</h2><p class="muted" id="userCount">Memuat pengguna...</p></div><button id="addUser" disabled>+ Tambah Pengguna</button></div>
+          <div class="toolbar">
+            <div class="filters">
+              <div><label for="userSearch">Cari username</label><input id="userSearch" type="search" placeholder="Ketik username" maxlength="50"></div>
+              <div><label for="roleFilter">Peran</label><select id="roleFilter"><option value="">Semua peran</option><option value="admin">Administrator IT</option><option value="gudang">Staf Gudang</option><option value="pelayanan">Apoteker Pelayanan</option><option value="kepala_farmasi">Kepala Farmasi</option></select></div>
+              <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="">Semua status</option><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></div>
+            </div>
+            <button id="reloadUsers" class="secondary">Muat Ulang</button>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Username</th><th>Peran</th><th>Status</th><th>Dibuat</th><th>Tindakan</th></tr></thead><tbody id="usersBody"><tr><td colspan="5">Memuat...</td></tr></tbody></table></div>
+          <div class="pagination"><button id="prevUsers" class="secondary" disabled>Sebelumnya</button><span id="userPage" aria-live="polite">Halaman 1</span><button id="nextUsers" class="secondary" disabled>Berikutnya</button></div>
+        </section>
+        <section class="card" aria-labelledby="logsTitle">
+          <div class="toolbar"><h2 id="logsTitle">Log aktivitas</h2><span class="muted">50 aktivitas per halaman</span></div>
+          <form id="logFilter" class="filters"><div><label for="logSearch">Cari pengguna, aktivitas, atau IP</label><input id="logSearch" type="search" maxlength="100" placeholder="Contoh: reset_password"></div><button type="submit">Tampilkan Log</button></form>
+          <p class="muted">Waktu ditampilkan sesuai waktu lokal browser.</p>
+          <div id="logError" class="message error" role="alert" hidden></div>
+          <div class="table-wrap"><table><thead><tr><th>Waktu</th><th>Pengguna</th><th>Aktivitas</th><th>Alamat IP</th></tr></thead><tbody id="logsBody"><tr><td colspan="4">Memuat...</td></tr></tbody></table></div>
+          <div class="pagination"><button id="prevLogs" class="secondary" disabled>Sebelumnya</button><span id="logPage">Halaman 1</span><button id="nextLogs" class="secondary" disabled>Berikutnya</button></div>
+        </section>
+      </main>
+    </div>
+  </div>
   <dialog id="userDialog" aria-labelledby="formTitle">
     <form id="userForm">
       <h2 id="formTitle">Tambah Pengguna</h2>
@@ -129,7 +201,8 @@
       for (const user of filtered.slice((userPage - 1) * USERS_PER_PAGE, userPage * USERS_PER_PAGE)) {
         const row = document.createElement('tr');
         cell(row, user.username + (user.user_id === currentUser.user_id ? ' (Anda)' : ''));
-        cell(row, roleNames[user.role] || user.role);
+        const roleBadge = document.createElement('span'); roleBadge.className = 'role role-' + user.role; roleBadge.textContent = roleNames[user.role] || user.role;
+        cell(row, '').append(roleBadge);
         const badge = document.createElement('span'); badge.className = 'badge' + (user.status === 'aktif' ? '' : ' inactive'); badge.textContent = user.status === 'aktif' ? 'Aktif' : 'Nonaktif';
         cell(row, '').append(badge); cell(row, time(user.created_at));
         const actions = cell(row, '', 'actions');
