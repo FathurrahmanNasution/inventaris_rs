@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manajemen Pengguna - Inventaris Obat RS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f1f5f9; color: #1e293b; }
+    header { background: #0f172a; color: white; padding: 20px max(20px, calc((100vw - 1160px)/2)); display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    header strong { font-size: 18px; } header small { display: block; margin-top: 6px; color: #cbd5e1; }
+    nav { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; } nav a { color: white; font-size: 14px; }
+    main { max-width: 1200px; margin: 28px auto; padding: 0 20px; }
+    h1 { font-size: 26px; margin-bottom: 8px; } h2 { font-size: 20px; margin: 0; }
+    p { color: #64748b; line-height: 1.5; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 24px; margin: 20px 0; }
+    .toolbar { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+    .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
+    label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 7px; }
+    input, select { border: 1px solid #cbd5e1; border-radius: 6px; padding: 10px; font: inherit; max-width: 100%; background: white; }
+    input:focus, select:focus, button:focus-visible, a:focus-visible { outline: 3px solid #bae6fd; outline-offset: 2px; }
+    button { border: 0; border-radius: 6px; padding: 10px 14px; background: #0284c7; color: white; cursor: pointer; font-weight: bold; }
+    button:hover { filter: brightness(.92); } button:disabled { opacity: .55; cursor: not-allowed; }
+    .secondary { color: #334155; background: #e2e8f0; } .danger { color: #991b1b; background: #fee2e2; }
+    .table-wrap { overflow-x: auto; } table { width: 100%; min-width: 680px; border-collapse: collapse; text-align: left; }
+    th { font-size: 12px; text-transform: uppercase; background: #f8fafc; color: #475569; }
+    th, td { padding: 14px 12px; border-bottom: 1px solid #e2e8f0; font-size: 14px; }
+    td.actions { white-space: nowrap; } td button { padding: 7px 10px; margin: 2px; }
+    .badge { display: inline-block; border-radius: 20px; padding: 5px 9px; font-size: 12px; background: #dcfce7; color: #166534; }
+    .inactive { background: #f1f5f9; color: #475569; }
+    .message { padding: 12px; border-radius: 6px; margin: 14px 0; background: #dcfce7; color: #166534; }
+    .message.error { background: #fef2f2; color: #991b1b; }
+    [hidden] { display: none !important; } .muted { color: #64748b; font-size: 13px; }
+    .pagination { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    dialog { width: min(480px, calc(100% - 32px)); max-height: 90vh; border: 0; border-radius: 12px; padding: 26px; color: #1e293b; }
+    dialog::backdrop { background: #0f172a99; } dialog input, dialog select { width: 100%; }
+    .field { margin: 18px 0; } .dialog-actions { display: flex; justify-content: end; gap: 10px; margin-top: 22px; }
+    .log-action { overflow-wrap: anywhere; min-width: 200px; }
+    @media(max-width: 600px) { .card { padding: 16px; } h1 { font-size: 22px; } .filters, .filters > div { width: 100%; } .filters input, .filters select { width: 100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div><strong>Inventaris Obat RS</strong><small id="identity">Memuat sesi...</small></div>
+    <nav aria-label="Navigasi akun"><a href="/dashboard">Dashboard</a><a href="/account/password">Ganti Kata Sandi</a><button id="logout" class="secondary">Logout</button></nav>
+  </header>
+  <main>
+    <h1>Manajemen Pengguna</h1>
+    <p>Kelola akun staf, hak akses, dan aktivitas pengguna.</p>
+    <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+    <section class="card" aria-labelledby="usersTitle">
+      <div class="toolbar"><div><h2 id="usersTitle">Akun pengguna</h2><p class="muted" id="userCount">Memuat pengguna...</p></div><button id="addUser" disabled>+ Tambah Pengguna</button></div>
+      <div class="toolbar">
+        <div class="filters">
+          <div><label for="userSearch">Cari username</label><input id="userSearch" type="search" placeholder="Ketik username" maxlength="50"></div>
+          <div><label for="roleFilter">Peran</label><select id="roleFilter"><option value="">Semua peran</option><option value="admin">Administrator IT</option><option value="gudang">Staf Gudang</option><option value="pelayanan">Apoteker Pelayanan</option><option value="kepala_farmasi">Kepala Farmasi</option></select></div>
+          <div><label for="statusFilter">Status</label><select id="statusFilter"><option value="">Semua status</option><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></div>
+        </div>
+        <button id="reloadUsers" class="secondary">Muat Ulang</button>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>Username</th><th>Peran</th><th>Status</th><th>Dibuat</th><th>Tindakan</th></tr></thead><tbody id="usersBody"><tr><td colspan="5">Memuat...</td></tr></tbody></table></div>
+      <div class="pagination"><button id="prevUsers" class="secondary" disabled>Sebelumnya</button><span id="userPage" aria-live="polite">Halaman 1</span><button id="nextUsers" class="secondary" disabled>Berikutnya</button></div>
+    </section>
+    <section class="card" aria-labelledby="logsTitle">
+      <div class="toolbar"><h2 id="logsTitle">Log aktivitas</h2><span class="muted">50 aktivitas per halaman</span></div>
+      <form id="logFilter" class="filters"><div><label for="logSearch">Cari pengguna, aktivitas, atau IP</label><input id="logSearch" type="search" maxlength="100" placeholder="Contoh: reset_password"></div><button type="submit">Tampilkan Log</button></form>
+      <p class="muted">Waktu ditampilkan sesuai waktu lokal browser.</p>
+      <div id="logError" class="message error" role="alert" hidden></div>
+      <div class="table-wrap"><table><thead><tr><th>Waktu</th><th>Pengguna</th><th>Aktivitas</th><th>Alamat IP</th></tr></thead><tbody id="logsBody"><tr><td colspan="4">Memuat...</td></tr></tbody></table></div>
+      <div class="pagination"><button id="prevLogs" class="secondary" disabled>Sebelumnya</button><span id="logPage">Halaman 1</span><button id="nextLogs" class="secondary" disabled>Berikutnya</button></div>
+    </section>
+  </main>
+  <dialog id="userDialog" aria-labelledby="formTitle">
+    <form id="userForm">
+      <h2 id="formTitle">Tambah Pengguna</h2>
+      <div id="formError" class="message error" role="alert" hidden></div>
+      <div class="field"><label for="username">Username</label><input id="username" required minlength="3" maxlength="50" pattern="[a-z0-9._\-]{3,50}" autocomplete="off"><p class="muted">3-50 karakter: huruf kecil, angka, titik, garis bawah, atau tanda hubung.</p></div>
+      <div class="field"><label for="role">Peran</label><select id="role" required><option value="pelayanan">Apoteker Pelayanan</option><option value="gudang">Staf Gudang</option><option value="kepala_farmasi">Kepala Farmasi</option><option value="admin">Administrator IT</option></select></div>
+      <div class="field" id="statusField"><label for="status">Status</label><select id="status"><option value="aktif">Aktif</option><option value="nonaktif">Nonaktif</option></select></div>
+      <div id="initialPasswordFields"><div class="field"><label for="password">Kata sandi awal</label><input id="password" type="password" minlength="8" maxlength="72" autocomplete="new-password"></div><div class="field"><label for="confirmPassword">Konfirmasi kata sandi</label><input id="confirmPassword" type="password" minlength="8" maxlength="72" autocomplete="new-password"></div><p class="muted">Minimal 8 karakter dengan huruf dan angka. Akun baru berstatus aktif.</p></div>
+      <p id="selfNotice" class="muted" hidden>Peran dan status akun Anda sendiri tidak dapat diubah.</p>
+      <div class="dialog-actions"><button type="button" class="secondary" data-close="userDialog">Batal</button><button id="saveUser" type="submit">Simpan</button></div>
+    </form>
+  </dialog>
+  <dialog id="resetDialog" aria-labelledby="resetTitle">
+    <form id="resetForm">
+      <h2 id="resetTitle">Reset Kata Sandi</h2><p id="resetTarget"></p>
+      <p>Sesi login lama pengguna akan berakhir. Sampaikan kata sandi baru melalui saluran yang aman.</p>
+      <div id="resetError" class="message error" role="alert" hidden></div>
+      <div class="field"><label for="resetPassword">Kata sandi baru</label><input id="resetPassword" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></div>
+      <div class="field"><label for="resetConfirm">Konfirmasi kata sandi</label><input id="resetConfirm" type="password" required minlength="8" maxlength="72" autocomplete="new-password"></div>
+      <p class="muted">Minimal 8 karakter dengan huruf dan angka.</p>
+      <div class="dialog-actions"><button type="button" class="secondary" data-close="resetDialog">Batal</button><button id="saveReset" type="submit">Reset Kata Sandi</button></div>
+    </form>
+  </dialog>
+  <script>
+    const $ = id => document.getElementById(id);
+    const roleNames = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
+    let users = [], currentUser, editing = null, resetId, logPage = 1, logSearch = '', logsBusy = false;
+    let userPage = 1;
+    const USERS_PER_PAGE = 20;
+    function message(text, error = false, id = 'message') {
+      $(id).textContent = text; $(id).className = 'message' + (error ? ' error' : ''); $(id).hidden = false;
+    }
+    async function api(url, method = 'GET', body) {
+      const response = await fetch(url, { method, credentials: 'same-origin',
+        headers: method === 'GET' ? {} : { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body) });
+      if (response.status === 401) { location.assign('/login'); throw new Error('Silakan login kembali.'); }
+      if (response.status === 403) { location.assign('/dashboard'); throw new Error('Akses ditolak.'); }
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Permintaan gagal.');
+      return result;
+    }
+    function cell(row, value, className = '') {
+      const td = document.createElement('td'); td.textContent = value ?? '-'; td.className = className; row.append(td); return td;
+    }
+    function time(value) { return value ? new Date(value).toLocaleString('id-ID') : '-'; }
+    function renderUsers() {
+      const query = $('userSearch').value.trim().toLowerCase();
+      const filtered = users.filter(u => u.username.includes(query) && (!$('roleFilter').value || u.role === $('roleFilter').value) && (!$('statusFilter').value || u.status === $('statusFilter').value));
+      $('usersBody').replaceChildren();
+      $('userCount').textContent = filtered.length + ' dari ' + users.length + ' pengguna';
+      const totalPages = Math.max(1, Math.ceil(filtered.length / USERS_PER_PAGE));
+      userPage = Math.min(userPage, totalPages);
+      $('userPage').textContent = 'Halaman ' + userPage + ' dari ' + totalPages;
+      $('prevUsers').disabled = userPage <= 1;
+      $('nextUsers').disabled = userPage >= totalPages;
+      for (const user of filtered.slice((userPage - 1) * USERS_PER_PAGE, userPage * USERS_PER_PAGE)) {
+        const row = document.createElement('tr');
+        cell(row, user.username + (user.user_id === currentUser.user_id ? ' (Anda)' : ''));
+        cell(row, roleNames[user.role] || user.role);
+        const badge = document.createElement('span'); badge.className = 'badge' + (user.status === 'aktif' ? '' : ' inactive'); badge.textContent = user.status === 'aktif' ? 'Aktif' : 'Nonaktif';
+        cell(row, '').append(badge); cell(row, time(user.created_at));
+        const actions = cell(row, '', 'actions');
+        const edit = document.createElement('button'); edit.textContent = 'Edit'; edit.className = 'secondary'; edit.addEventListener('click', () => openUser(user)); actions.append(edit);
+        if (user.user_id !== currentUser.user_id) {
+          const reset = document.createElement('button'); reset.textContent = 'Reset Sandi'; reset.className = 'danger';
+          reset.addEventListener('click', () => { resetId = user.user_id; $('resetForm').reset(); $('resetError').hidden = true; $('resetTarget').textContent = 'Pengguna: ' + user.username; $('resetDialog').showModal(); });
+          actions.append(reset);
+        }
+        $('usersBody').append(row);
+      }
+      if (!filtered.length) { const row = document.createElement('tr'); cell(row, 'Tidak ada pengguna yang cocok.').colSpan = 5; $('usersBody').append(row); }
+    }
+    async function loadUsers() {
+      $('reloadUsers').disabled = true;
+      try { users = (await api('/api/users')).data.users; renderUsers(); $('addUser').disabled = false; }
+      catch (error) { message(error.message, true); }
+      finally { $('reloadUsers').disabled = false; }
+    }
+    async function loadLogs(page = 1) {
+      if (logsBusy) return;
+      logsBusy = true; $('prevLogs').disabled = true; $('nextLogs').disabled = true; $('logError').hidden = true;
+      try {
+        const result = await api('/api/audit-logs?' + new URLSearchParams({ page, search: logSearch }));
+        logPage = result.data.page; $('logsBody').replaceChildren();
+        for (const log of result.data.logs) {
+          const row = document.createElement('tr'); cell(row, time(log.created_at)); cell(row, log.username || (log.user_id ? 'ID ' + log.user_id : 'Tidak dikenal'));
+          cell(row, log.action, 'log-action'); cell(row, log.ip_address); $('logsBody').append(row);
+        }
+        if (!result.data.logs.length) { const row = document.createElement('tr'); cell(row, 'Tidak ada aktivitas yang cocok.').colSpan = 4; $('logsBody').append(row); }
+        $('logPage').textContent = 'Halaman ' + logPage;
+        $('prevLogs').disabled = logPage <= 1; $('nextLogs').disabled = !result.data.hasMore;
+      } catch (error) { message(error.message, true, 'logError'); }
+      finally { logsBusy = false; }
+    }
+    function openUser(user = null) {
+      editing = user; $('userForm').reset(); $('formError').hidden = true;
+      $('formTitle').textContent = user ? 'Edit Pengguna' : 'Tambah Pengguna';
+      $('username').value = user?.username || ''; $('role').value = user?.role || 'pelayanan'; $('status').value = user?.status || 'aktif';
+      const self = user?.user_id === currentUser.user_id;
+      $('role').disabled = self; $('status').disabled = self; $('selfNotice').hidden = !self;
+      $('statusField').hidden = !user; $('initialPasswordFields').hidden = !!user;
+      $('password').required = !user; $('confirmPassword').required = !user;
+      $('userDialog').showModal();
+    }
+    function checkPassword(password, confirmation) {
+      if (password !== confirmation) throw new Error('Konfirmasi kata sandi tidak cocok.');
+      if (password.length < 8 || !/[a-zA-Z]/.test(password) || !/[0-9]/.test(password) || new TextEncoder().encode(password).length > 72)
+        throw new Error('Kata sandi minimal 8 karakter, berisi huruf dan angka, dan maksimal 72 byte.');
+    }
+    $('userForm').addEventListener('submit', async event => {
+      event.preventDefault(); $('formError').hidden = true; $('saveUser').disabled = true;
+      try {
+        const body = { username: $('username').value.trim().toLowerCase(), role: $('role').value };
+        if (editing) {
+          body.status = $('status').value;
+          if ((editing.status !== body.status || editing.role !== body.role) && !confirm('Simpan perubahan peran/status untuk ' + editing.username + '?')) return;
+        } else { checkPassword($('password').value, $('confirmPassword').value); body.password = $('password').value; body.confirmPassword = $('confirmPassword').value; }
+        const result = await api(editing ? '/api/users/' + editing.user_id : '/api/users', editing ? 'PATCH' : 'POST', body);
+        $('userDialog').close(); message(result.message);
+        if (result.data.user.user_id === currentUser.user_id) { currentUser = result.data.user; $('identity').textContent = currentUser.username + ' | Administrator IT'; }
+        await loadUsers(); await loadLogs(1);
+      } catch (error) { message(error.message, true, 'formError'); }
+      finally { $('saveUser').disabled = false; }
+    });
+    $('resetForm').addEventListener('submit', async event => {
+      event.preventDefault(); $('resetError').hidden = true; $('saveReset').disabled = true;
+      try {
+        checkPassword($('resetPassword').value, $('resetConfirm').value);
+        const result = await api('/api/users/' + resetId + '/reset-password', 'POST', { newPassword: $('resetPassword').value });
+        $('resetDialog').close(); message(result.message); await loadLogs(1);
+      } catch (error) { message(error.message, true, 'resetError'); }
+      finally { $('saveReset').disabled = false; }
+    });
+    for (const id of ['userDialog', 'resetDialog']) {
+      $(id).addEventListener('close', () => $(id).querySelector('form').reset());
+      $(id).addEventListener('cancel', event => { if ($('saveUser').disabled || $('saveReset').disabled) event.preventDefault(); });
+    }
+    document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => {
+      if (!$('saveUser').disabled && !$('saveReset').disabled) $(button.dataset.close).close();
+    }));
+    $('addUser').addEventListener('click', () => openUser());
+    $('reloadUsers').addEventListener('click', loadUsers);
+    for (const id of ['userSearch', 'roleFilter', 'statusFilter']) $(id).addEventListener('input', () => { userPage = 1; if (currentUser) renderUsers(); });
+    $('prevUsers').addEventListener('click', () => { userPage--; renderUsers(); });
+    $('nextUsers').addEventListener('click', () => { userPage++; renderUsers(); });
+    $('logFilter').addEventListener('submit', event => { event.preventDefault(); if (!logsBusy) { logSearch = $('logSearch').value.trim(); loadLogs(1); } });
+    $('prevLogs').addEventListener('click', () => loadLogs(logPage - 1)); $('nextLogs').addEventListener('click', () => loadLogs(logPage + 1));
+    $('logout').addEventListener('click', async () => {
+      $('logout').disabled = true;
+      try { await api('/api/auth/logout', 'POST', {}); location.assign('/login'); }
+      catch (error) { message(error.message, true); $('logout').disabled = false; }
+    });
+    (async () => {
+      try {
+        currentUser = (await api('/api/auth/me')).data.user;
+        if (currentUser.role !== 'admin') { location.assign('/dashboard'); return; }
+        $('identity').textContent = currentUser.username + ' | Administrator IT';
+        await Promise.all([loadUsers(), loadLogs()]);
+      } catch (error) { message(error.message, true); }
+    })();
+  </script>
+</body>
+</html>

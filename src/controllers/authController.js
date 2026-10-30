@@ -1,118 +1,24 @@
 const authService = require('../services/authService');
-
-/**
- * Controller untuk menangani request Register
- * POST /api/auth/register
- */
-async function register(req, res) {
-  try {
-    const { username, password, confirmPassword, role } = req.body;
-    const ipAddress = req.ip || req.connection.remoteAddress;
-
-    const newUser = await authService.registerUser(
-      { username, password, confirmPassword, role },
-      ipAddress
-    );
-
-    return res.status(201).json({
-      success: true,
-      message: 'Registrasi pengguna berhasil diselesaikan.',
-      data: {
-        user: newUser
-      }
-    });
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
-}
-
-/**
- * Controller untuk menangani request Login
- * POST /api/auth/login
- */
+const userService = require('../services/userService');
+const auditService = require('../services/auditService');
+const cookieOptions = () => ({ httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
 async function login(req, res) {
-  try {
-    const { username, password } = req.body;
-    const ipAddress = req.ip || req.connection.remoteAddress;
-
-    const { user, token } = await authService.loginUser(
-      { username, password },
-      ipAddress
-    );
-
-    // Simpan token di cookie HttpOnly agar tidak dapat dibaca JavaScript.
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 8 * 60 * 60 * 1000, // 8 jam
-      sameSite: 'lax',
-      path: '/'
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: 'Login berhasil.',
-      data: {
-        user
-      }
-    });
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: error.message
-    });
-  }
+  const { user, token } = await authService.loginUser(req.body || {}, req.ip);
+  res.cookie('token', token, { ...cookieOptions(), maxAge: authService.SESSION_SECONDS * 1000 });
+  res.json({ success: true, message: 'Login berhasil.', data: { user } });
 }
-
-/**
- * Controller untuk menangani Logout
- * POST /api/auth/logout
- */
 async function logout(req, res) {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/'
-  });
-  return res.status(200).json({
-    success: true,
-    message: 'Logout berhasil. Sesi telah diakhiri.'
-  });
+  await auditService.writeAuditLog(req.user.user_id, 'logout', req.ip);
+  res.clearCookie('token', cookieOptions());
+  res.json({ success: true, message: 'Logout berhasil.' });
 }
-
-/**
- * Controller untuk mendapatkan profil pengguna saat ini
- * GET /api/auth/me
- */
-async function getMe(req, res) {
-  try {
-    const user = await authService.findUserById(req.user.user_id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Pengguna tidak ditemukan.'
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: { user }
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message
-    });
-  }
+async function getMe(req, res) { res.json({ success: true, data: { user: req.user } }); }
+async function changePassword(req, res) {
+  const { oldPassword, newPassword } = req.body || {};
+  if (typeof oldPassword !== 'string' || !oldPassword)
+    return res.status(400).json({ success: false, message: 'Kata sandi lama wajib diisi.' });
+  await userService.changePassword(req.user.user_id, newPassword, req.user.user_id, req.ip, oldPassword);
+  res.clearCookie('token', cookieOptions());
+  res.json({ success: true, message: 'Kata sandi berhasil diubah. Silakan login kembali.' });
 }
-
-module.exports = {
-  register,
-  login,
-  logout,
-  getMe
-};
+module.exports = { login, logout, getMe, changePassword };

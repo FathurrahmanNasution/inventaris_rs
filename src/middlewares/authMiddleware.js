@@ -1,69 +1,35 @@
-const { verifyJwtToken } = require('../services/authService');
-
-/**
- * Middleware untuk memverifikasi autentikasi JWT token
- * Mendukung pembacaan token dari Authorization Header (Bearer token)
- * maupun dari HTTP cookie (memudahkan pengetesan via browser).
- */
-function authenticateToken(req, res, next) {
-  let token = null;
-
-  // 1. Ambil dari header Authorization
-  const authHeader = req.headers['authorization'];
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ')[1];
+const { verifyJwtToken, getSessionUser } = require('../services/authService');
+async function authenticateToken(req, res, next) {
+  const header = req.get('authorization');
+  const token = header?.startsWith('Bearer ') ? header.slice(7) : req.cookies?.token;
+  const user = token && await getSessionUser(verifyJwtToken(token));
+  res.set('Cache-Control', 'no-store');
+  if (!user) {
+    if (!req.originalUrl.startsWith('/api/') && req.method === 'GET' && req.accepts('html')) return res.redirect('/login');
+    return res.status(401).json({ success: false, message: 'Sesi tidak valid atau telah berakhir. Silakan login kembali.' });
   }
-
-  // 2. Fallback: ambil dari cookies jika ada
-  if (!token && req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  }
-
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'Akses ditolak. Token autentikasi tidak ditemukan.'
-    });
-  }
-
-  const decoded = verifyJwtToken(token);
-  if (!decoded) {
-    return res.status(403).json({
-      success: false,
-      message: 'Token tidak valid atau telah kedaluwarsa. Silakan login kembali.'
-    });
-  }
-
-  req.user = decoded;
+  req.user = user;
   next();
 }
-
-/**
- * Middleware untuk otorisasi berbasis peran (Role-Based Access Control)
- * Sesuai REQ-AUTH-005 pada SRS
- * @param  {...string} allowedRoles daftar role yang diperbolehkan
- */
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Pengguna belum terautentikasi.'
-      });
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: `Akses ditolak. Fitur ini memerlukan salah satu hak akses: [${allowedRoles.join(', ')}]. Peran Anda saat ini: "${req.user.role}".`
-      });
-    }
-
+    if (!req.user || !allowedRoles.includes(req.user.role))
+      return res.status(403).json({ success: false, message: 'Akses khusus Administrator IT.' });
     next();
   };
 }
-
-module.exports = {
-  authenticateToken,
-  requireRole
-};
+// JSON-only writes and same-origin validation protect cookie-authenticated operations from CSRF.
+function protectWrites(req, res, next) {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  let foreignOrigin = false;
+  try {
+    const origin = req.get('origin');
+    foreignOrigin = !!origin && new URL(origin).origin !== (process.env.APP_ORIGIN || req.protocol + '://' + req.get('host'));
+  } catch { foreignOrigin = true; }
+  if (foreignOrigin || req.get('sec-fetch-site') === 'cross-site')
+    return res.status(403).json({ success: false, message: 'Permintaan harus berasal dari aplikasi ini.' });
+  if (!req.is('application/json'))
+    return res.status(415).json({ success: false, message: 'Gunakan Content-Type application/json.' });
+  next();
+}
+module.exports = { authenticateToken, requireRole, protectWrites };

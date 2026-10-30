@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const router = express.Router();
+const { authenticateToken, requireRole } = require('../middlewares/authMiddleware');
 
 const serveView = (fileName, fallbackTitle) => (req, res) => {
   const filePath = path.join(__dirname, '../../views', fileName);
@@ -38,16 +39,16 @@ const serveView = (fileName, fallbackTitle) => (req, res) => {
 router.get('/', serveView('home.html', 'Homepage'));
 
 // 2. Register Page (Tetap dipertahankan)
-router.get('/register', serveView('register.html', 'Halaman Register'));
+router.get('/register', authenticateToken, requireRole('admin'), (req, res) => res.redirect('/admin'));
 
 // 3. Login Page
 router.get('/login', serveView('login.html', 'Halaman Login'));
 
 // 4. Dashboard Page (Tetap dipertahankan)
-router.get('/dashboard', serveView('dashboard.html', 'Halaman Dashboard'));
+router.get('/dashboard', authenticateToken, serveView('dashboard.html', 'Halaman Dashboard'));
+router.get('/account/password', authenticateToken, serveView('password.html', 'Ganti Kata Sandi'));
 
 // 5. Admin Page (Placeholder handover untuk tim frontend admin)
-router.get('/admin', serveView('admin.html', 'Halaman Admin'));
-router.get('/admin/users', serveView('admin.html', 'Halaman Admin'));
+router.get(['/admin', '/admin/users'], authenticateToken, requireRole('admin'), serveView('admin.html', 'Halaman Admin'));
 
 module.exports = router;
