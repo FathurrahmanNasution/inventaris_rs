@@ -1,9 +1,8 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const path = require('path');
-const fs = require('fs');
+const { protectWrites } = require('./src/middlewares/authMiddleware');
+require('./src/services/authService').jwtSecret();
 
 const authRoutes = require('./src/routes/authRoutes');
 const userRoutes = require('./src/routes/userRoutes');
@@ -12,14 +11,15 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware global
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.disable('x-powered-by');
+app.use('/api', protectWrites);
+app.use(express.json({ limit: '16kb' }));
 app.use(cookieParser());
 
 // Routing API
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/audit-logs', require('./src/routes/auditRoutes'));
 
 const viewRoutes = require('./src/routes/viewRoutes');
 
@@ -28,15 +28,16 @@ app.use('/', viewRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-  console.error('[Server Error]', err.stack);
-  res.status(500).json({
+  const status = err.status >= 400 && err.status < 500 ? err.status : 500;
+  if (status === 500) console.error('[Server Error]', err.code || err.name);
+  res.status(status).json({
     success: false,
-    message: 'Terjadi kesalahan internal pada server.',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: status === 500 ? 'Terjadi kesalahan internal pada server.' :
+      err.type === 'entity.parse.failed' ? 'JSON tidak valid.' : err.message
   });
 });
 
-app.listen(PORT, () => {
+if (require.main === module) app.listen(PORT, () => {
   console.log(`=======================================================`);
   console.log(`🚀 Server Backend aktif di http://localhost:${PORT}`);
   console.log(`📡 Menghubungkan ke Neon Cloud PostgreSQL...`);

@@ -30,6 +30,7 @@
     <h2>🏥 Dashboard Inventaris Obat RS</h2>
     <div>
       <span id="userGreeting" style="margin-right: 15px; font-size: 14px;"></span>
+      <a href="/account/password" style="color: white; margin-right: 15px;">Ganti Kata Sandi</a>
       <button id="btnLogout" class="btn-logout">Logout</button>
     </div>
   </div>
@@ -84,11 +85,8 @@
 
   <script>
     async function initDashboard() {
-      const token = localStorage.getItem('auth_token');
       try {
-        const res = await fetch('/api/auth/me', {
-          headers: token ? { 'Authorization': 'Bearer ' + token } : {}
-        });
+        const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
 
         if (!res.ok) {
           alert('Sesi belum terautentikasi atau telah kedaluwarsa. Silakan login terlebih dahulu.');
@@ -111,6 +109,7 @@
         roleBadge.className = `badge badge-${user.role}`;
 
         if (user.role === 'admin') {
+          document.querySelectorAll('div.menu-item').forEach(item => item.hidden = true);
           document.getElementById('adminNotice').style.display = 'block';
           document.getElementById('adminMenuCard').style.display = 'block';
         }
@@ -120,7 +119,10 @@
     }
 
     document.getElementById('btnLogout').addEventListener('click', async () => {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      try {
+        const response = await fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+        if (!response.ok && response.status !== 401) throw new Error('Logout gagal. Silakan coba lagi.');
+      } catch (error) { alert(error.message); return; }
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
       document.cookie = 'token=; path=/; max-age=0';

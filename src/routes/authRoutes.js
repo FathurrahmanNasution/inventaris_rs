@@ -1,18 +1,10 @@
-const express = require('express');
-const router = express.Router();
-const authController = require('../controllers/authController');
-const { authenticateToken } = require('../middlewares/authMiddleware');
-
-// Route registrasi pengguna baru
-router.post('/register', authController.register);
-
-// Route masuk / login
-router.post('/login', authController.login);
-
-// Route keluar / logout
-router.post('/logout', authController.logout);
-
-// Route cek profil user saat ini (perlu autentikasi)
-router.get('/me', authenticateToken, authController.getMe);
-
+const router = require('express').Router();
+const controller = require('../controllers/authController');
+const userController = require('../controllers/userController');
+const { authenticateToken, requireRole } = require('../middlewares/authMiddleware');
+router.post('/login', controller.login);
+router.post('/register', authenticateToken, requireRole('admin'), userController.createUser);
+router.post('/logout', authenticateToken, controller.logout);
+router.get('/me', authenticateToken, controller.getMe);
+router.patch('/password', authenticateToken, controller.changePassword);
 module.exports = router;

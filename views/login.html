@@ -101,7 +101,9 @@
           showError(result.message || 'Login gagal. Periksa kembali kredensial Anda.');
           return;
         }
-        window.location.assign('/dashboard');
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        window.location.assign(result.data.user.role === 'admin' ? '/admin' : '/dashboard');
       } catch (error) {
         showError('Tidak dapat terhubung ke server. Silakan coba lagi.');
       } finally {
