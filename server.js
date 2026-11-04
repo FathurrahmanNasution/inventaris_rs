@@ -23,6 +23,10 @@ app.use('/api/audit-logs', require('./src/routes/auditRoutes'));
 
 const viewRoutes = require('./src/routes/viewRoutes');
 
+const path = require('path');
+
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
 // Routing Web Views (HTML Dasar)
 app.use('/', viewRoutes);
 
@@ -39,8 +43,8 @@ app.use((err, req, res, next) => {
 
 if (require.main === module) app.listen(PORT, () => {
   console.log(`=======================================================`);
-  console.log(`🚀 Server Backend aktif di http://localhost:${PORT}`);
-  console.log(`📡 Menghubungkan ke Neon Cloud PostgreSQL...`);
+  console.log(`Server Backend aktif di http://localhost:${PORT}`);
+  console.log(`Menghubungkan ke Neon Cloud PostgreSQL...`);
   console.log(`=======================================================`);
 });
 
