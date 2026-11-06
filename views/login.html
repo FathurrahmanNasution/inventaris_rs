@@ -1,116 +1,331 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login - Inventaris Stok Obat RS</title>
-  <style>
-    :root { color-scheme: light; font-family: Arial, sans-serif; }
-    * { box-sizing: border-box; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #eff6ff; color: #0f172a; }
-    .card { width: min(100%, 420px); padding: 32px; background: white; border: 1px solid #dbeafe; border-radius: 14px; box-shadow: 0 12px 30px rgba(15, 23, 42, .08); }
-    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-    .brand-mark { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; background: #0369a1; color: white; font-size: 23px; }
-    h1 { margin: 0; font-size: 22px; color: #075985; }
-    .subtitle { margin: 4px 0 0; color: #64748b; font-size: 13px; }
-    .form-group { margin: 18px 0; }
-    label { display: block; margin-bottom: 7px; font-size: 14px; font-weight: 700; }
-    input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 7px; font-size: 15px; }
-    input:focus { outline: 3px solid #bae6fd; border-color: #0284c7; }
-    input[aria-invalid="true"] { border-color: #dc2626; }
-    button { width: 100%; padding: 12px; border: 0; border-radius: 7px; background: #0284c7; color: white; font-size: 15px; font-weight: 700; cursor: pointer; }
-    button:hover { background: #0369a1; }
-    button:disabled { cursor: wait; opacity: .7; }
-    .message { display: none; padding: 11px 12px; border-radius: 7px; font-size: 14px; line-height: 1.4; }
-    .message.error { display: block; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
-    .help, .footer { color: #64748b; font-size: 12px; line-height: 1.45; }
-    .help { margin: 7px 0 0; }
-    .footer { margin: 22px 0 0; text-align: center; }
-    a { color: #0369a1; text-decoration: none; font-weight: 700; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RS Inventaris – Masuk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #2f3e63;
+    --navy-dark: #212f63;
+    --blue: #4366b2;
+    --blue-link: #3b66c4;
+    --green: #4aa35e;
+    --ink: #1f2a4a;
+    --muted: #7b869c;
+    --field: #f3f5f9;
+    --field-border: #e3e7ee;
+    --accent-blue: #4a90e2;
+    --accent-green: #3fb768;
+    --accent-orange: #e8833a;
+    --accent-red: #d9473f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    color: var(--ink);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    min-height: 100vh;
+  }
+
+  /* ---------- Panel kiri ---------- */
+  .left {
+    background: var(--navy);
+    padding: 32px 30px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  .brand {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    color: #6ea8f7;
+  }
+  .hero {
+    margin: auto 0;
+    padding-bottom: 40px;
+  }
+  .hero h1 {
+    color: #fff;
+    font-size: 28px;
+    line-height: 1.15;
+    font-weight: 700;
+    margin-bottom: 14px;
+  }
+  .hero p {
+    color: #aab6d3;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 260px;
+    margin-bottom: 26px;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    max-width: 680px;
+  }
+  .stat {
+    background: var(--navy-dark);
+    border-left: 3px solid var(--accent-blue);
+    padding: 10px 12px;
+    border-radius: 2px;
+  }
+  .stat.green  { border-color: var(--accent-green); }
+  .stat.orange { border-color: var(--accent-orange); }
+  .stat.red    { border-color: var(--accent-red); }
+  .stat strong { display: block; color: #fff; font-size: 16px; font-weight: 700; }
+  .stat span   { display: block; color: #aab6d3; font-size: 10px; margin-top: 2px; line-height: 1.3; }
+
+  /* ---------- Panel kanan ---------- */
+  .right {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background-color: #6c7a99;
+    background-image: url('/images/Background_image.jpeg');
+    background-size: cover;
+    background-position: center;
+  }
+  .right::before {
+    content: "";
+    position: absolute; inset: 0;
+    background: rgba(47, 62, 99, .55);
+  }
+
+  .card {
+    position: relative;
+    width: 100%;
+    max-width: 340px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px 18px 20px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .25);
+  }
+
+  .tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    background: #eef1f6;
+    border-radius: 6px;
+    padding: 3px;
+    gap: 3px;
+    margin-bottom: 18px;
+  }
+  .tab {
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7690;
+    padding: 8px 0;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .tab.active { background: var(--blue); color: #fff; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .panel h2 { font-size: 17px; font-weight: 700; color: var(--ink); }
+  .panel .sub { font-size: 11px; color: var(--muted); margin: 3px 0 16px; }
+
+  label.lbl {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 5px;
+  }
+  .field { margin-bottom: 12px; }
+  .field input[type="text"],
+  .field input[type="email"],
+  .field input[type="password"] {
+    width: 100%;
+    height: 34px;
+    padding: 0 10px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--field);
+    border: 1px solid var(--field-border);
+    border-radius: 4px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(67, 102, 178, .15);
+    background: #fff;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10.5px;
+    margin: 2px 0 22px;
+  }
+  .row label { display: flex; align-items: center; gap: 6px; color: var(--muted); cursor: pointer; }
+  .row a { color: var(--blue-link); font-weight: 600; text-decoration: none; }
+  .row a:hover { text-decoration: underline; }
+
+  .btn {
+    width: 100%;
+    height: 36px;
+    border: 0;
+    border-radius: 4px;
+    background: var(--green);
+    color: #fff;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: filter .15s;
+  }
+  .btn:hover { filter: brightness(.95); }
+  #panel-daftar .btn { margin-top: 10px; }
+
+  .alert {
+    display: none;
+    font-size: 11px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    background: #fdecea;
+    color: #b3261e;
+  }
+  .alert.show { display: block; }
+
+  /* ---------- Responsif ---------- */
+  @media (max-width: 900px) {
+    body { grid-template-columns: 1fr; }
+    .left { display: none; }
+    .right { min-height: 100vh; }
+  }
+
+  a.tab { text-decoration: none; text-align: center; display: block; }
+
+  .alert.success { background: #dcfce7; color: #15803d; }
+  .field input[aria-invalid="true"] { border-color: #dc2626; }
+  .btn:disabled { cursor: wait; opacity: .7; }
+</style>
 </head>
 <body>
-  <main class="card">
-    <div class="brand">
-      <div class="brand-mark" aria-hidden="true">+</div>
-      <div>
-        <h1>Inventaris Obat RS</h1>
-        <p class="subtitle">Masuk ke sistem inventaris farmasi</p>
+
+  <!-- Panel kiri -->
+  <aside class="left">
+    <div class="brand">RS INVENTARIS</div>
+    <div class="hero">
+      <h1>Stok obat<br>terpantau,<br>kedaluwarsa<br>tercegah.</h1>
+      <p>Masuk untuk mengelola katalog obat, stok masuk dan keluar, serta alert kedaluwarsa instalasi farmasi.</p>
+      <div class="stats">
+        <div class="stat"><strong>1.248</strong><span>Jenis obat<br>aktif</span></div>
+        <div class="stat green"><strong>Rp 842,5 jt</strong><span>Nilai aset obat</span></div>
+        <div class="stat orange"><strong>14</strong><span>Stok menipis</span></div>
+        <div class="stat red"><strong>6</strong><span>Batch hampir<br>kedaluwarsa</span></div>
       </div>
     </div>
+  </aside>
 
-    <div id="message" class="message" role="alert" aria-live="polite"></div>
-    <form id="loginForm" novalidate>
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" autocomplete="username"
-          autocapitalize="none" spellcheck="false" maxlength="50" required>
-        <p class="help">Gunakan 3-50 karakter: huruf kecil, angka, titik, garis bawah, atau tanda hubung.</p>
+    <!-- Panel kanan -->
+  <main class="right">
+    <div class="card">
+      <div class="tabs" role="tablist">
+        <a class="tab active" href="/login" role="tab">Masuk</a>
+        <a class="tab" href="/register" role="tab">Daftar</a>
       </div>
-      <div class="form-group">
-        <label for="password">Kata sandi</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required>
-      </div>
-      <button id="submitButton" type="submit">Masuk</button>
-    </form>
-    <p class="footer"><a href="/">&larr; Kembali ke beranda</a></p>
+
+      <section class="panel active">
+        <h2>Selamat datang kembali</h2>
+        <p class="sub">Masuk dengan akun instalasi farmasi Anda.</p>
+
+        <div id="message" class="alert" role="alert" aria-live="polite"></div>
+        <form id="loginForm" novalidate>
+          <div class="field">
+            <label class="lbl" for="username">Email atau nama pengguna</label>
+            <input type="text" id="username" name="username" autocomplete="username"
+              autocapitalize="none" spellcheck="false" maxlength="50" required>
+          </div>
+          <div class="field">
+            <label class="lbl" for="password">Kata sandi</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+          </div>
+          <div class="row">
+            <label><input type="checkbox" name="remember"> Ingat saya</label>
+            <a href="/lupa-password">Lupa kata sandi?</a>
+          </div>
+          <button type="submit" class="btn" id="submitButton">Masuk</button>
+        </form>
+      </section>
+    </div>
   </main>
 
-  <script>
-    const form = document.getElementById('loginForm');
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-    const message = document.getElementById('message');
-    const submitButton = document.getElementById('submitButton');
-    const usernamePattern = /^[a-z0-9._-]{3,50}$/;
+<script>
+  const form = document.getElementById('loginForm');
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  const message = document.getElementById('message');
+  const submitButton = document.getElementById('submitButton');
+  const usernamePattern = /^[a-z0-9._-]{3,50}$/;
 
-    function showError(text) {
-      message.textContent = text;
-      message.className = 'message error';
+  function showError(text) {
+    message.textContent = text;
+    message.className = 'alert show';
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const username = usernameInput.value.trim().toLowerCase();
+    const password = passwordInput.value;
+    usernameInput.setAttribute('aria-invalid', String(!usernamePattern.test(username)));
+
+    if (!usernamePattern.test(username)) {
+      showError('Username tidak valid. Periksa format username Anda.');
+      usernameInput.focus();
+      return;
+    }
+    if (!password) {
+      showError('Kata sandi wajib diisi.');
+      passwordInput.focus();
+      return;
     }
 
-    form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const username = usernameInput.value.trim().toLowerCase();
-      const password = passwordInput.value;
-      usernameInput.setAttribute('aria-invalid', String(!usernamePattern.test(username)));
-
-      if (!usernamePattern.test(username)) {
-        showError('Username tidak valid. Periksa format username Anda.');
-        usernameInput.focus();
+    submitButton.disabled = true;
+    submitButton.textContent = 'Memeriksa...';
+    message.className = 'alert';
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ username, password })
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        showError(result.message || 'Login gagal. Periksa kembali kredensial Anda.');
         return;
       }
-      if (!password) {
-        showError('Kata sandi wajib diisi.');
-        passwordInput.focus();
-        return;
-      }
-
-      submitButton.disabled = true;
-      submitButton.textContent = 'Memeriksa...';
-      message.className = 'message';
-      try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'same-origin',
-          body: JSON.stringify({ username, password })
-        });
-        const result = await response.json();
-        if (!response.ok || !result.success) {
-          showError(result.message || 'Login gagal. Periksa kembali kredensial Anda.');
-          return;
-        }
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
-        window.location.assign(result.data.user.role === 'admin' ? '/admin' : '/dashboard');
-      } catch (error) {
-        showError('Tidak dapat terhubung ke server. Silakan coba lagi.');
-      } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Masuk';
-      }
-    });
-  </script>
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('auth_user');
+      window.location.assign(result.data.user.role === 'admin' ? '/admin' : '/dashboard');
+    } catch (error) {
+      showError('Tidak dapat terhubung ke server. Silakan coba lagi.');
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = 'Masuk';
+    }
+  });
+</script>
 </body>
 </html>

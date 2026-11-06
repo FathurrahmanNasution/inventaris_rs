@@ -39,7 +39,7 @@ const serveView = (fileName, fallbackTitle) => (req, res) => {
 router.get('/', serveView('home.html', 'Homepage'));
 
 // 2. Register Page (Tetap dipertahankan)
-router.get('/register', authenticateToken, requireRole('admin'), (req, res) => res.redirect('/admin'));
+router.get('/register', serveView('register.html', 'Halaman Daftar'));
 
 // 3. Login Page
 router.get('/login', serveView('login.html', 'Halaman Login'));
