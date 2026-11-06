@@ -17,7 +17,7 @@
     .badge-kepala_farmasi { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
     .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-top: 20px; }
     .menu-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 6px; text-decoration: none; color: inherit; transition: all 0.2s; }
-    .menu-item:hover { border-color: #0284c7; background: #f0f9ff; }
+    a.menu-item:hover { border-color: #0284c7; background: #f0f9ff; }
     .menu-item h3 { margin: 0 0 6px 0; font-size: 16px; color: #0284c7; }
     .menu-item p { margin: 0; font-size: 13px; color: #64748b; }
     .btn-logout { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-weight: bold; }
@@ -62,18 +62,18 @@
             <h3>📥 Stok Masuk</h3>
             <p>Penerimaan obat dari PBF beserta batch & tanggal kedaluwarsa.</p>
           </div>
-          <div class="menu-item">
+          <a href="/stok-keluar" class="menu-item">
             <h3>📤 Stok Keluar (FEFO)</h3>
             <p>Pengeluaran obat dengan alokasi otomatis First Expired First Out.</p>
-          </div>
-          <div class="menu-item">
+          </a>
+          <a href="/monitoring" class="menu-item">
             <h3>⚠️ Monitoring & EWS</h3>
             <p>Peringatan stok menipis dan mendekati ED (< 30 hari).</p>
-          </div>
-          <div class="menu-item">
+          </a>
+          <a href="/laporan" class="menu-item">
             <h3>📋 Stock Opname & Laporan</h3>
             <p>Audit fisik persediaan berkala dan ekspor PDF/Excel.</p>
-          </div>
+          </a>
           <a href="/admin" id="adminMenuCard" class="menu-item" style="display: none; border-color: #7c3aed;">
             <h3 style="color: #7c3aed;">👥 Manajemen Pengguna</h3>
             <p>Pengaturan akun staf, konfigurasi RBAC, dan audit trail log.</p>
@@ -109,7 +109,7 @@
         roleBadge.className = `badge badge-${user.role}`;
 
         if (user.role === 'admin') {
-          document.querySelectorAll('div.menu-item').forEach(item => item.hidden = true);
+          document.querySelectorAll('.menu-item:not(#adminMenuCard)').forEach(item => item.hidden = true);
           document.getElementById('adminNotice').style.display = 'block';
           document.getElementById('adminMenuCard').style.display = 'block';
         }

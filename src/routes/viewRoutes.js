@@ -51,4 +51,11 @@ router.get('/account/password', authenticateToken, serveView('password.html', 'G
 // 5. Admin Page (Placeholder handover untuk tim frontend admin)
 router.get(['/admin', '/admin/users'], authenticateToken, requireRole('admin'), serveView('admin.html', 'Halaman Admin'));
 
+// Stok Keluar (semua user yang sudah login)
+router.get('/stok-keluar', authenticateToken, serveView('stok-keluar.html', 'Stok Keluar'));
+
+router.get('/monitoring', authenticateToken, serveView('monitoring.html', 'Monitoring'));
+
+router.get('/laporan', authenticateToken, serveView('laporan.html', 'Laporan'));
+
 module.exports = router;
