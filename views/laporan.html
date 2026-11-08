@@ -29,19 +29,32 @@
     main { flex: 1; min-width: 0; padding: 22px 28px 44px; overflow-y: auto; }
 
     .page-title { font-size: 22px; font-weight: 700; color: var(--navy); margin: 0; }
+    .subtitle { margin: 6px 0 0; font-size: 13px; color: #718096; }
     button { border: 0; border-radius: 3px; padding: 10px 14px; background: var(--blue); color: #fff; cursor: pointer; font-weight: bold; font-family: inherit; }
     button:hover { filter: brightness(.92); } button:disabled { opacity: .55; cursor: not-allowed; }
     button:focus-visible, a:focus-visible { outline: 3px solid #bee3f8; outline-offset: 2px; }
     .secondary { color: var(--text); background: var(--th-bg); }
 
-    .actions { display: flex; justify-content: flex-end; gap: 18px; margin: 28px 0 22px; }
+    /* Toolbar sesi opname */
+    .opname-bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 20px 0 4px; }
+    .opname-bar label { font-size: 13px; color: var(--muted); font-weight: 700; }
+    #sessionSelect { padding: 10px 12px; border: 1px solid var(--border); border-radius: 3px; font-family: inherit; font-size: 13px; background: #fff; color: var(--text); min-width: 250px; }
+    .status-chip { display: inline-block; padding: 7px 13px; border-radius: 3px; font-size: 12px; font-weight: 700; }
+    .status-chip.draft { background: #e2e8f0; color: #2d3748; }
+    .status-chip.pending_approval { background: #feebc8; color: #7b341e; }
+    .status-chip.approved { background: #c6f6d5; color: #22543d; }
+    .status-chip.rejected { background: #fed7d7; color: #9b2c2c; }
+    .grow { flex: 1; }
+    #newSession { background: var(--blue); }
+
+    .actions { display: flex; justify-content: flex-end; gap: 18px; margin: 14px 0 22px; }
     .actions button { width: 150px; padding: 18px 0; font-size: 13px; }
     #printPdf { background: var(--red); } #exportXls { background: var(--green-dark); }
 
     .table-wrap { background: #fff; border: 2px solid var(--border); border-radius: 2px; overflow-x: auto; }
-    table { width: 100%; min-width: 760px; border-collapse: collapse; text-align: left; }
-    th { font-size: 14px; font-weight: 700; color: var(--text); background: var(--th-bg); padding: 20px 14px; border-bottom: 2px solid var(--border); }
-    td { padding: 20px 14px; border-bottom: 1px solid var(--row-line); font-size: 15px; color: var(--muted); }
+    table { width: 100%; min-width: 860px; border-collapse: collapse; text-align: left; }
+    th { font-size: 14px; font-weight: 700; color: var(--text); background: var(--th-bg); padding: 18px 14px; border-bottom: 2px solid var(--border); }
+    td { padding: 16px 14px; border-bottom: 1px solid var(--row-line); font-size: 15px; color: var(--muted); }
     tr:last-child td { border-bottom: 0; }
     th:first-child, td:first-child { padding-left: 22px; }
     td.name { font-weight: 700; color: var(--navy); font-size: 14px; }
@@ -51,6 +64,21 @@
     .badge.ok { background: #c6f6d5; color: #22543d; }
     .badge.minor { background: #feebc8; color: #7b341e; }
     .badge.major { background: #fed7d7; color: #9b2c2c; }
+    .badge.neutral { background: #e2e8f0; color: #4a5568; }
+
+    td input { padding: 8px 10px; border: 1px solid var(--border); border-radius: 3px; font-family: inherit; font-size: 14px; color: var(--text); }
+    td input:focus-visible { outline: 3px solid #bee3f8; outline-offset: 1px; }
+    td input.qty { width: 92px; }
+    td input.note { width: 100%; min-width: 150px; }
+    td input.need { border-color: var(--red); background: #fff5f5; }
+
+    .opname-actions { display: flex; justify-content: flex-end; gap: 14px; margin-top: 18px; flex-wrap: wrap; }
+    .opname-actions button { min-width: 160px; padding: 14px 0; font-size: 13px; }
+    #savePhysical { background: var(--th-bg); color: var(--text); }
+    #cancelOpname { background: #fff; color: var(--red); border: 1px solid var(--red); }
+    #submitOpname { background: var(--blue); }
+    #approveOpname { background: var(--green-dark); }
+    #rejectOpname { background: var(--red); }
 
     .message { padding: 12px; border-radius: 4px; margin: 14px 0 0; background: #c6f6d5; color: var(--active-text); font-size: 14px; }
     .message.error { background: #fed7d7; color: #9b2c2c; }
@@ -64,7 +92,7 @@
       main { padding: 20px; overflow-y: visible; }
     }
     @media print {
-      header, aside, .actions, .message { display: none !important; }
+      header, aside, .actions, .opname-bar, .opname-actions, .message { display: none !important; }
       .window { height: auto; } .body { display: block; } main { overflow: visible; padding: 0; }
       body { background: #fff; }
     }
@@ -93,16 +121,39 @@
       </aside>
       <main>
         <h2 class="page-title">Rekapitulasi Stock Opname &amp; Laporan Valuasi Obat Bulanan</h2>
+        <p class="subtitle">Pilih sesi opname, input hasil hitung fisik, lalu ajukan untuk persetujuan Kepala Instalasi Farmasi.</p>
+
+        <div class="opname-bar">
+          <label for="sessionSelect">Sesi Opname</label>
+          <select id="sessionSelect" aria-label="Pilih sesi opname"></select>
+          <span id="sessionStatus" class="status-chip" hidden></span>
+          <span class="grow"></span>
+          <button id="newSession" hidden>+ Sesi Opname Baru</button>
+        </div>
+
         <div class="actions">
           <button id="printPdf">Cetak PDF</button>
           <button id="exportXls">Ekspor Excel</button>
         </div>
+
         <div id="message" class="message" role="status" aria-live="polite" hidden></div>
-        <div class="table-wrap" style="margin-top:22px">
+
+        <div class="table-wrap" style="margin-top:14px">
           <table>
-            <thead><tr><th>Nama Obat</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih</th><th>Nilai Aset (Rp)</th><th class="center">Status Audit</th></tr></thead>
+            <thead><tr>
+              <th>Nama Obat</th><th>Stok Sistem</th><th>Stok Fisik</th><th>Selisih</th>
+              <th>Nilai Aset (Rp)</th><th>Keterangan</th><th class="center">Status Audit</th>
+            </tr></thead>
             <tbody id="reportBody"></tbody>
           </table>
+        </div>
+
+        <div class="opname-actions">
+          <button id="cancelOpname" hidden>Batalkan Sesi</button>
+          <button id="savePhysical" hidden>Simpan Input Fisik</button>
+          <button id="submitOpname" hidden>Ajukan untuk Persetujuan</button>
+          <button id="approveOpname" hidden>Setujui Penyesuaian</button>
+          <button id="rejectOpname" hidden>Tolak</button>
         </div>
       </main>
     </div>
@@ -110,46 +161,238 @@
   <script>
     const $ = id => document.getElementById(id);
     const roleNames = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
+    const STATUS_LABEL = { draft: 'Draft', pending_approval: 'Menunggu Persetujuan', approved: 'Disetujui', rejected: 'Ditolak' };
+    const OPERATIONAL = ['gudang', 'pelayanan', 'kepala_farmasi'];
 
-    // DATA CONTOH (tampilan saja). Ganti dengan data dari API saat backend laporan tersedia.
-    const report = [
-      { name: 'Amoxicillin 500mg', system: 450, physical: 450, value: 4500000 },
-      { name: 'Paracetamol 500mg', system: 1200, physical: 1200, value: 3600000 },
-      { name: 'Cefixime 100mg', system: 85, physical: 83, value: 2490000 },
-      { name: 'Omeprazole 20mg', system: 45, physical: 45, value: 1350000 },
-      { name: 'Ketorolac Inj 30mg', system: 12, physical: 12, value: 420000 },
-      { name: 'Amlodipine 10mg', system: 650, physical: 650, value: 1950000 }
-    ];
-    const rp = n => n.toLocaleString('id-ID');
-    function status(diff) {
-      if (diff === 0) return { text: 'Cocok', cls: 'ok' };
-      return Math.abs(diff) <= 5 ? { text: 'Selisih Minor', cls: 'minor' } : { text: 'Selisih Besar', cls: 'major' };
-    }
+    const rp = n => Number(n || 0).toLocaleString('id-ID');
+    const num = n => Number(n || 0).toLocaleString('en-US');
+    const BADGE = {
+      cocok: { text: 'Cocok', cls: 'ok' }, selisih_minor: { text: 'Selisih Minor', cls: 'minor' },
+      selisih_besar: { text: 'Selisih Besar', cls: 'major' }, belum_dihitung: { text: 'Belum Dihitung', cls: 'neutral' }
+    };
+    const badgeOf = a => BADGE[a] || BADGE.belum_dihitung;
     function message(text, error = false) { const el = $('message'); el.textContent = text; el.className = 'message' + (error ? ' error' : ''); el.hidden = false; }
+    function clearMessage() { $('message').hidden = true; }
+    // Klasifikasi audit mengikuti backend: selisih 0 = cocok, |selisih| <= 5 minor, sisanya besar.
+    function auditOf(physical, system) {
+      if (physical === null || physical === '' || physical === undefined) return 'belum_dihitung';
+      const diff = Number(physical) - Number(system);
+      return diff === 0 ? 'cocok' : Math.abs(diff) <= 5 ? 'selisih_minor' : 'selisih_besar';
+    }
 
-    function render() {
-      $('reportBody').replaceChildren();
-      for (const r of report) {
-        const diff = r.physical - r.system, st = status(diff), tr = document.createElement('tr');
-        const add = (text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.append(td); return td; };
-        add(r.name, 'name'); add(r.system.toLocaleString('en-US')); add(r.physical.toLocaleString('en-US'));
-        add(String(diff), diff === 0 ? 'diff-0' : diff < 0 ? 'diff-neg' : 'diff-pos'); add(rp(r.value));
-        const badge = document.createElement('span'); badge.className = 'badge ' + st.cls; badge.textContent = st.text;
-        add('', 'center').append(badge);
-        $('reportBody').append(tr);
+    let me = null;          // user yang login
+    let current = null;     // detail sesi aktif { opname_id, status, items[] }
+    let editable = false;   // apakah tabel bisa diinput (draft + peran operasional)
+
+    function setStatusChip(status) {
+      const chip = $('sessionStatus');
+      if (!status) { chip.hidden = true; return; }
+      chip.hidden = false; chip.className = 'status-chip ' + status; chip.textContent = STATUS_LABEL[status] || status;
+    }
+    // Perbarui sel selisih + badge audit satu baris berdasarkan nilai fisik saat ini.
+    function recalcRow(tr, system) {
+      const input = tr.querySelector('input.qty');
+      const raw = input ? input.value.trim() : tr.dataset.physical;
+      const has = raw !== '' && raw !== undefined && raw !== null;
+      const diff = has ? Number(raw) - Number(system) : null;
+      const diffCell = tr.querySelector('.cell-diff');
+      diffCell.textContent = diff === null ? '-' : String(diff);
+      diffCell.className = 'cell-diff ' + (diff === null ? '' : diff === 0 ? 'diff-0' : diff < 0 ? 'diff-neg' : 'diff-pos');
+      const b = badgeOf(auditOf(has ? raw : null, system));
+      const badge = tr.querySelector('.badge'); badge.className = 'badge ' + b.cls; badge.textContent = b.text;
+      const note = tr.querySelector('input.note');
+      if (note) note.classList.toggle('need', diff !== null && diff !== 0 && !note.value.trim());
+    }
+
+    function renderTable() {
+      const body = $('reportBody'); body.replaceChildren();
+      const items = current ? current.items : [];
+      if (!items.length) {
+        const tr = document.createElement('tr'), td = document.createElement('td');
+        td.colSpan = 7; td.textContent = current ? 'Sesi ini belum memiliki item.' : 'Belum ada sesi stock opname.';
+        tr.append(td); body.append(tr); return;
+      }
+      for (const it of items) {
+        const tr = document.createElement('tr');
+        const add = (text, cls) => { const td = document.createElement('td'); if (text !== null) td.textContent = text; if (cls) td.className = cls; tr.append(td); return td; };
+        add(it.name, 'name');
+        add(num(it.system_qty));
+        // Stok Fisik
+        const physCell = add(null);
+        if (editable) {
+          const inp = document.createElement('input'); inp.type = 'number'; inp.min = '0'; inp.className = 'qty';
+          inp.value = it.physical_qty === null || it.physical_qty === undefined ? '' : it.physical_qty;
+          inp.addEventListener('input', () => recalcRow(tr, it.system_qty));
+          physCell.append(inp);
+        } else physCell.textContent = it.physical_qty === null || it.physical_qty === undefined ? '-' : num(it.physical_qty);
+        // Selisih (diisi recalcRow)
+        add(null, 'cell-diff');
+        // Nilai Aset = stok sistem * harga satuan
+        add(rp(Number(it.system_qty) * Number(it.unit_price)));
+        // Keterangan
+        const noteCell = add(null);
+        if (editable) {
+          const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'note'; inp.maxLength = 255;
+          inp.placeholder = 'alasan bila ada selisih'; inp.value = it.note || '';
+          inp.dataset.code = it.medicine_code;
+          inp.addEventListener('input', () => recalcRow(tr, it.system_qty));
+          noteCell.append(inp);
+        } else noteCell.textContent = it.note || '-';
+        // Status Audit
+        const statusCell = add(null, 'center');
+        const badge = document.createElement('span'); badge.className = 'badge'; statusCell.append(badge);
+        tr.dataset.code = it.medicine_code; tr.dataset.physical = it.physical_qty === null ? '' : it.physical_qty;
+        body.append(tr);
+        recalcRow(tr, it.system_qty);
       }
     }
+
+    function renderControls() {
+      const status = current ? current.status : null;
+      const operational = me && OPERATIONAL.includes(me.role);
+      editable = !!(current && status === 'draft' && operational);
+      $('newSession').hidden = !operational;
+      $('savePhysical').hidden = !editable;
+      $('submitOpname').hidden = !editable;
+      // Batalkan: sesi belum final (draft / menunggu persetujuan) oleh peran operasional.
+      $('cancelOpname').hidden = !(current && ['draft', 'pending_approval'].includes(status) && operational);
+      const canApprove = current && status === 'pending_approval' && me && me.role === 'kepala_farmasi';
+      $('approveOpname').hidden = !canApprove;
+      $('rejectOpname').hidden = !canApprove;
+      setStatusChip(status);
+    }
+
+    function renderAll() { renderControls(); renderTable(); }
+
+    // ---- Data ----
+    async function loadSessions(selectId) {
+      const sessions = (await api('/api/laporan/opname')).data.sessions || [];
+      const sel = $('sessionSelect'); sel.replaceChildren();
+      if (!sessions.length) {
+        const opt = document.createElement('option'); opt.textContent = '— belum ada sesi —'; opt.value = ''; sel.append(opt);
+        current = null; renderAll(); return;
+      }
+      for (const s of sessions) {
+        const opt = document.createElement('option'); opt.value = s.opname_id;
+        opt.textContent = '#' + s.opname_id + (s.reference_number ? ' · ' + s.reference_number : '') + ' — ' + (STATUS_LABEL[s.status] || s.status);
+        sel.append(opt);
+      }
+      const target = selectId && sessions.some(s => s.opname_id == selectId) ? selectId : sessions[0].opname_id;
+      sel.value = target;
+      await loadSession(target);
+    }
+    async function loadSession(id) {
+      if (!id) { current = null; renderAll(); return; }
+      current = (await api('/api/laporan/opname/' + id)).data;
+      renderAll();
+    }
+
+    function collectItems() {
+      const rows = [...$('reportBody').querySelectorAll('tr[data-code]')];
+      return rows.map(tr => {
+        const qty = tr.querySelector('input.qty').value.trim();
+        const note = tr.querySelector('input.note').value.trim();
+        return { medicine_code: tr.dataset.code, physical_qty: qty === '' ? null : Number(qty), note: note || undefined, _qtyRaw: qty };
+      });
+    }
+    async function doSave() {
+      const items = collectItems();
+      const filled = items.filter(i => i._qtyRaw !== '');
+      if (!filled.length) { message('Isi minimal satu stok fisik.', true); return false; }
+      // Validasi keterangan untuk item berselisih (dicek juga di backend).
+      for (const it of filled) {
+        const sys = current.items.find(x => x.medicine_code === it.medicine_code).system_qty;
+        if (Number(it._qtyRaw) - Number(sys) !== 0 && !it.note) { message('Keterangan wajib diisi untuk item dengan selisih.', true); return false; }
+      }
+      await api('/api/laporan/opname/' + current.opname_id + '/items', 'PATCH', { items: filled.map(({ medicine_code, physical_qty, note }) => ({ medicine_code, physical_qty, note })) });
+      return true;
+    }
+
+    $('sessionSelect').addEventListener('change', e => { clearMessage(); loadSession(e.target.value).catch(err => message(err.message, true)); });
+
+    $('newSession').addEventListener('click', async () => {
+      const ref = (prompt('Nomor/label sesi opname (opsional):', 'OPN-' + new Date().toISOString().slice(0, 10)) || '').trim();
+      $('newSession').disabled = true; clearMessage();
+      try {
+        const res = await api('/api/laporan/opname', 'POST', ref ? { reference_number: ref } : {});
+        message('Sesi opname baru dibuat (saldo sistem dibekukan).');
+        await loadSessions(res.data.opname_id);
+      } catch (err) { message(err.message, true); }
+      finally { $('newSession').disabled = false; }
+    });
+
+    $('savePhysical').addEventListener('click', async () => {
+      $('savePhysical').disabled = true; clearMessage();
+      try { if (await doSave()) { message('Input fisik tersimpan.'); await loadSession(current.opname_id); } }
+      catch (err) { message(err.message, true); }
+      finally { $('savePhysical').disabled = false; }
+    });
+
+    $('submitOpname').addEventListener('click', async () => {
+      if (!confirm('Ajukan sesi opname ini untuk persetujuan Kepala Farmasi? Semua item wajib sudah terisi.')) return;
+      $('submitOpname').disabled = true; clearMessage();
+      try {
+        if (await doSave()) {
+          await api('/api/laporan/opname/' + current.opname_id + '/submit', 'POST');
+          message('Sesi opname diajukan untuk persetujuan.');
+          await loadSessions(current.opname_id);
+        }
+      } catch (err) { message(err.message, true); }
+      finally { $('submitOpname').disabled = false; }
+    });
+
+    $('approveOpname').addEventListener('click', async () => {
+      if (!confirm('Setujui penyesuaian stok sesuai hasil opname ini? Stok akan disesuaikan.')) return;
+      const note = (prompt('Catatan verifikasi (opsional):', '') || '').trim();
+      $('approveOpname').disabled = true; clearMessage();
+      try {
+        const res = await api('/api/laporan/opname/' + current.opname_id + '/approve', 'POST', { note });
+        message('Opname disetujui. ' + (res.data.adjusted || 0) + ' item stoknya disesuaikan.');
+        await loadSessions(current.opname_id);
+      } catch (err) { message(err.message, true); }
+      finally { $('approveOpname').disabled = false; }
+    });
+
+    $('rejectOpname').addEventListener('click', async () => {
+      if (!confirm('Tolak sesi opname ini? Stok tidak akan diubah.')) return;
+      const note = (prompt('Alasan penolakan (opsional):', '') || '').trim();
+      $('rejectOpname').disabled = true; clearMessage();
+      try {
+        await api('/api/laporan/opname/' + current.opname_id + '/reject', 'POST', { note });
+        message('Sesi opname ditolak.');
+        await loadSessions(current.opname_id);
+      } catch (err) { message(err.message, true); }
+      finally { $('rejectOpname').disabled = false; }
+    });
+
+    $('cancelOpname').addEventListener('click', async () => {
+      if (!confirm('Batalkan sesi opname ini? Sesi akan dihapus dan tidak bisa dikembalikan.')) return;
+      $('cancelOpname').disabled = true; clearMessage();
+      try {
+        await api('/api/laporan/opname/' + current.opname_id + '/cancel', 'POST', {});
+        current = null;
+        await loadSessions();
+        message('Sesi opname dibatalkan.');
+      } catch (err) { message(err.message, true); }
+      finally { $('cancelOpname').disabled = false; }
+    });
 
     $('printPdf').addEventListener('click', () => window.print());
 
     $('exportXls').addEventListener('click', () => {
+      const items = current ? current.items : [];
+      if (!items.length) return message('Tidak ada data untuk diekspor.', true);
       const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
-      const lines = [['Nama Obat', 'Stok Sistem', 'Stok Fisik', 'Selisih', 'Nilai Aset (Rp)', 'Status Audit']];
-      for (const r of report) { const diff = r.physical - r.system; lines.push([r.name, r.system, r.physical, diff, r.value, status(diff).text]); }
-      const csv = '\uFEFF' + lines.map(l => l.map(esc).join(',')).join('\r\n');
+      const lines = [['Nama Obat', 'Stok Sistem', 'Stok Fisik', 'Selisih', 'Nilai Aset (Rp)', 'Keterangan', 'Status Audit']];
+      for (const it of items) {
+        const phys = it.physical_qty === null || it.physical_qty === undefined ? '' : it.physical_qty;
+        const diff = phys === '' ? '' : phys - it.system_qty;
+        lines.push([it.name, it.system_qty, phys, diff, Number(it.system_qty) * Number(it.unit_price), it.note || '', badgeOf(auditOf(phys === '' ? null : phys, it.system_qty)).text]);
+      }
+      const csv = '﻿' + lines.map(l => l.map(esc).join(',')).join('\r\n');
       const link = document.createElement('a');
       link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-      link.download = 'laporan-stock-opname-' + new Date().toISOString().slice(0, 7) + '.csv';
+      link.download = 'laporan-stock-opname-' + new Date().toISOString().slice(0, 10) + '.csv';
       document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(link.href);
       message('Laporan berhasil diekspor (format CSV, dapat dibuka di Excel).');
     });
@@ -169,13 +412,13 @@
       catch (error) { message(error.message, true); $('logout').disabled = false; }
     });
 
-    render();
     (async () => {
       try {
-        const user = (await api('/api/auth/me')).data.user;
-        $('identity').textContent = user.username + ' | ' + (roleNames[user.role] || user.role);
-        $('navUsers').hidden = user.role !== 'admin'; // Manajemen Pengguna hanya untuk Admin
+        me = (await api('/api/auth/me')).data.user;
+        $('identity').textContent = me.username + ' | ' + (roleNames[me.role] || me.role);
+        $('navUsers').hidden = me.role !== 'admin';
       } catch (error) { $('identity').textContent = 'Sesi tidak terhubung'; }
+      try { await loadSessions(); } catch (error) { message('Gagal memuat sesi opname: ' + error.message, true); }
     })();
   </script>
 </body>
