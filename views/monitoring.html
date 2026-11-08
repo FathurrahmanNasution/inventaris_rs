@@ -108,60 +108,46 @@
     const roleNames = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
     const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
-    // DATA CONTOH (tampilan saja). Ganti dengan data dari API saat backend monitoring tersedia.
-    // Tanggal kedaluwarsa dihitung dari tanggal acuan + sisa hari, agar sesuai desain.
-    const REF_DATE = Date.UTC(2026, 8, 21);
-    const alerts = [
-      { name: 'Amoxicillin 500mg', batch: 'AMX-02', days: 12, stock: 150, unit: 'Kapsul', action: 'Ajukan Retur' },
-      { name: 'Paracetamol Syr 60ml', batch: 'PCT-88', days: 18, stock: 45, unit: 'Botol', action: 'Ajukan Retur' },
-      { name: 'Cefixime 100mg', batch: 'CFX-14', days: 24, stock: 85, unit: 'Kapsul', action: 'Distribusi Cepat' },
-      { name: 'Ranitidine Inj 25mg', batch: 'RNT-03', days: 27, stock: 30, unit: 'Ampul', action: 'Distribusi Cepat' },
-      { name: 'Ceftriaxone Inj 1g', batch: 'CFT-91', days: 29, stock: 12, unit: 'Vial', action: 'Ajukan Retur' },
-      { name: 'Ketorolac Inj 30mg', batch: 'KTL-07', days: 29, stock: 20, unit: 'Ampul', action: 'Distribusi Cepat' },
-      { name: 'Omeprazole 20mg', batch: 'OMP-05', days: 31, stock: 45, unit: 'Kapsul', action: 'Distribusi Cepat' },
-      { name: 'Amlodipine 10mg', batch: 'AML-12', days: 35, stock: 300, unit: 'Tablet', action: 'Distribusi Cepat' },
-      { name: 'Metformin 500mg', batch: 'MTF-08', days: 38, stock: 520, unit: 'Tablet', action: 'Distribusi Cepat' },
-      { name: 'Ondansetron Inj 4mg', batch: 'OND-02', days: 42, stock: 25, unit: 'Ampul', action: 'Ajukan Retur' },
-      { name: 'Ketorolac Inj 30mg', batch: 'KTL-09', days: 45, stock: 12, unit: 'Ampul', action: 'Distribusi Cepat' },
-      { name: 'Dexamethasone Inj 5mg', batch: 'DXM-04', days: 50, stock: 40, unit: 'Ampul', action: 'Distribusi Cepat' },
-      { name: 'Ambroxol Syr 30mg/5ml', batch: 'AMB-06', days: 55, stock: 28, unit: 'Botol', action: 'Ajukan Retur' },
-      { name: 'Ciprofloxacin 500mg', batch: 'CPF-11', days: 60, stock: 210, unit: 'Tablet', action: 'Distribusi Cepat' },
-      { name: 'Furosemide 40mg', batch: 'FRS-03', days: 64, stock: 150, unit: 'Tablet', action: 'Distribusi Cepat' },
-      { name: 'Captopril 25mg', batch: 'CPT-15', days: 68, stock: 400, unit: 'Tablet', action: 'Distribusi Cepat' },
-      { name: 'Gentamicin Inj 80mg', batch: 'GNT-02', days: 72, stock: 18, unit: 'Ampul', action: 'Ajukan Retur' },
-      { name: 'Metronidazole 500mg', batch: 'MTZ-09', days: 76, stock: 260, unit: 'Tablet', action: 'Distribusi Cepat' },
-      { name: 'Cotrimoxazole 480mg', batch: 'CTX-07', days: 82, stock: 330, unit: 'Tablet', action: 'Distribusi Cepat' },
-      { name: 'Lansoprazole 30mg', batch: 'LNS-04', days: 88, stock: 90, unit: 'Kapsul', action: 'Distribusi Cepat' }
-    ];
+    // Data diambil dari API backend monitoring (/api/monitoring/expiry).
+    let alerts = [];
+    let summary = { all: 0, critical: 0, warning: 0 };
     let filter = 'critical';
 
-    function fmtDate(days) {
-      const d = new Date(REF_DATE + days * 86400000);
+    function fmtDate(iso) {
+      if (!iso) return '-';
+      const d = new Date(String(iso).slice(0, 10) + 'T00:00:00Z');
       return String(d.getUTCDate()).padStart(2, '0') + '-' + MONTHS[d.getUTCMonth()] + '-' + d.getUTCFullYear();
     }
+    function fmtDays(days) { return days < 0 ? 'Lewat ' + Math.abs(days) + ' Hari' : days + ' Hari'; }
     function message(text, error = false) { const el = $('message'); el.textContent = text; el.className = 'message' + (error ? ' error' : ''); el.hidden = false; }
-    const isCritical = a => a.days < 30;
+    const isCritical = a => a.status === 'critical';
+    // Heuristik aksi: batch kritis diajukan retur, perhatian diprioritaskan distribusi.
+    const actionFor = a => isCritical(a) ? { type: 'retur', label: 'Ajukan Retur' } : { type: 'distribusi', label: 'Distribusi Cepat' };
 
     function render() {
-      const critical = alerts.filter(isCritical), warning = alerts.filter(a => !isCritical(a));
-      $('tabAll').textContent = 'Semua Alert (' + alerts.length + ')';
-      $('tabCritical').textContent = 'Kritis < 30 Hari (' + critical.length + ')';
-      $('tabWarning').textContent = 'Perhatian 30-90 Hari (' + warning.length + ')';
+      $('tabAll').textContent = 'Semua Alert (' + summary.all + ')';
+      $('tabCritical').textContent = 'Kritis < 30 Hari (' + summary.critical + ')';
+      $('tabWarning').textContent = 'Perhatian 30-90 Hari (' + summary.warning + ')';
       document.querySelectorAll('.tab').forEach(t => { const on = t.dataset.filter === filter; t.classList.toggle('active', on); t.setAttribute('aria-selected', on); });
-      const rows = (filter === 'critical' ? critical : filter === 'warning' ? warning : alerts).slice().sort((a, b) => a.days - b.days);
+      const rows = (filter === 'all' ? alerts : alerts.filter(a => a.status === filter)).slice()
+        .sort((a, b) => a.days_remaining - b.days_remaining);
       $('alertBody').replaceChildren();
       for (const a of rows) {
         const tr = document.createElement('tr');
         const add = (text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.append(td); return td; };
-        add(a.name, 'name'); add(a.batch); add(fmtDate(a.days));
-        const pill = document.createElement('span'); pill.className = 'pill' + (isCritical(a) ? '' : ' warn'); pill.textContent = a.days + ' Hari';
+        add(a.name, 'name'); add(a.batch_number); add(fmtDate(a.expired_date));
+        const pill = document.createElement('span'); pill.className = 'pill' + (isCritical(a) ? '' : ' warn'); pill.textContent = fmtDays(a.days_remaining);
         add('').append(pill);
-        add(a.stock + ' ' + a.unit, 'stock');
-        const btn = document.createElement('button'); btn.className = 'act'; btn.textContent = a.action;
-        btn.addEventListener('click', () => {
-          if (!confirm(a.action + ' untuk batch #' + a.batch + ' (' + a.name + ')?')) return;
-          // TODO: kirim ke backend, mis. await api('/api/monitoring/action', 'POST', {...})
-          message(a.action + ' untuk batch #' + a.batch + ' berhasil dicatat.');
+        add(a.current_qty + ' ' + (a.unit || ''), 'stock');
+        const act = actionFor(a);
+        const btn = document.createElement('button'); btn.className = 'act'; btn.textContent = act.label;
+        btn.addEventListener('click', async () => {
+          if (!confirm(act.label + ' untuk batch #' + a.batch_number + ' (' + a.name + ')?')) return;
+          btn.disabled = true;
+          try {
+            await api('/api/monitoring/action', 'POST', { batch_number: a.batch_number, action: act.type });
+            message(act.label + ' untuk batch #' + a.batch_number + ' berhasil dicatat.');
+          } catch (error) { message(error.message, true); btn.disabled = false; }
         });
         add('').append(btn);
         $('alertBody').append(tr);
@@ -169,6 +155,15 @@
       if (!rows.length) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 6; td.textContent = 'Tidak ada alert pada kategori ini.'; tr.append(td); $('alertBody').append(tr); }
     }
     document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { filter = t.dataset.filter; $('message').hidden = true; render(); }));
+
+    async function loadAlerts() {
+      try {
+        const data = (await api('/api/monitoring/expiry?filter=all')).data;
+        alerts = data.alerts || [];
+        summary = data.summary || { all: 0, critical: 0, warning: 0 };
+      } catch (error) { message('Gagal memuat data alert: ' + error.message, true); }
+      render();
+    }
 
     async function api(url, method = 'GET', body) {
       const response = await fetch(url, { method, credentials: 'same-origin',
@@ -186,6 +181,7 @@
     });
 
     render();
+    loadAlerts();
     (async () => {
       try {
         const user = (await api('/api/auth/me')).data.user;
