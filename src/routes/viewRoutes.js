@@ -38,8 +38,9 @@ const serveView = (fileName, fallbackTitle) => (req, res) => {
 // 1. Homepage (Tetap dipertahankan)
 router.get('/', serveView('home.html', 'Homepage'));
 
-// 2. Register Page (Tetap dipertahankan)
-router.get('/register', serveView('register.html', 'Halaman Daftar'));
+// 2. Register Page dihapus: pendaftaran publik ditutup, akun staf dibuat oleh Admin.
+//    Alamat lama dialihkan ke Login agar bookmark/tautan lama tidak berujung halaman kosong.
+router.get('/register', (req, res) => res.redirect(301, '/login'));
 
 // 3. Login Page
 router.get('/login', serveView('login.html', 'Halaman Login'));

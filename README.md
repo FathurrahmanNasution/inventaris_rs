@@ -58,7 +58,6 @@ const authService = require('./src/services/authService');
 
 | Method | Endpoint | Hak Akses | Keterangan |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/register` | Khusus `admin` | Alias pembuatan staf; registrasi publik ditutup |
 | `POST` | `/api/auth/login` | Publik | Login pengguna & penerbitan token JWT |
 | `POST` | `/api/auth/logout` | Terautentikasi | Catat logout dan hapus cookie sesi |
 | `GET` | `/api/auth/me` | Terautentikasi | Ambil informasi profil user yang sedang login |
@@ -79,7 +78,7 @@ inventaris_rs/
 │   ├── config/
 │   │   └── db.js                 # Koneksi PostgreSQL Neon Cloud
 │   ├── controllers/
-│   │   └── authController.js     # Handler HTTP Register, Login, Logout, Me
+│   │   └── authController.js     # Handler HTTP Login, Logout, Me, Ganti Sandi
 │   ├── services/
 │   │   └── authService.js        # Fungsi modular autentikasi & RBAC
 │   ├── middlewares/
@@ -90,7 +89,6 @@ inventaris_rs/
 │       └── viewRoutes.js         # Route antarmuka web HTML
 ├── views/
 │   ├── home.html                 # Halaman beranda
-│   ├── register.html             # Halaman register staf
 │   └── dashboard.html            # Halaman dashboard operasional
 ├── .env                          # Konfigurasi database Neon Cloud
 ├── .env.example
@@ -106,7 +104,7 @@ Jalankan `npm install` lalu `npm start`, buka `/login`, dan gunakan akun Admin y
 
 Konfigurasi lokal `.env` membutuhkan `DATABASE_URL` dan `JWT_SECRET` (minimal 32 karakter). Jangan commit atau menampilkan nilainya. JWT berlaku tetap maksimal 8 jam; `JWT_EXPIRES_IN` lama tidak digunakan. Gunakan `NODE_ENV=production` di HTTPS. Untuk reverse proxy, set `APP_ORIGIN` ke origin publik persis, misalnya `https://inventaris.example` (tanpa slash akhir), agar validasi Origin tetap sesuai. Aplikasi dan API menggunakan origin yang sama.
 
-- `/admin` dan `/admin/users`: daftar/cari/filter akun, tambah, edit username/peran/status, reset kata sandi, dan log aktivitas. `/register` mengarah ke Admin dan tidak terbuka untuk publik.
+- `/admin` dan `/admin/users`: daftar/cari/filter akun, tambah, edit username/peran/status, reset kata sandi, dan log aktivitas. Tidak ada halaman maupun endpoint registrasi: akun staf baru hanya dibuat Admin lewat `POST /api/users`, dan alamat lama `/register` dialihkan ke `/login`.
 - `/account/password`: tersedia bagi semua role; kata sandi lama wajib valid. Kata sandi baru minimal 8 karakter dengan huruf dan angka, maksimal 72 byte sesuai batas bcrypt.
 - Semua request tulis menggunakan `Content-Type: application/json`. API mengembalikan `success`, `message` bila relevan, dan `data` untuk hasil baca/simpan.
 - Update pengguna mengirim ketiga field `username`, `role`, `status`. Pembuatan pengguna mengirim `username`, `password`, `role`; `confirmPassword` opsional dan diverifikasi bila dikirim.
@@ -120,4 +118,4 @@ Batasan sesi: logout menghapus cookie browser; salinan bearer token tetap berlak
 
 ### Pemeriksaan
 
-`npm test` menjalankan pengujian HTTP dengan adapter database in-memory terisolasi: RBAC empat role, registrasi publik, CRUD terbatas, validasi, reset/ganti sandi, sesi lama, lockout, CSRF, log, dan rollback saat audit gagal. Tes ini tidak menyentuh Neon atau akun yang sudah ada. Query baca dan render Admin juga diverifikasi terhadap Neon dengan koneksi read-only. Alur tulis UI diuji menggunakan fixture browser, bukan data operasional.
+`npm test` menjalankan pengujian HTTP dengan adapter database in-memory terisolasi: RBAC empat role, CRUD terbatas, validasi, reset/ganti sandi, sesi lama, lockout, CSRF, log, dan rollback saat audit gagal. Tes ini tidak menyentuh Neon atau akun yang sudah ada. Query baca dan render Admin juga diverifikasi terhadap Neon dengan koneksi read-only. Alur tulis UI diuji menggunakan fixture browser, bukan data operasional.
