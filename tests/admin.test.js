@@ -88,14 +88,19 @@ test('all non-Admin roles are denied user mutations, audit viewer and Admin HTML
     const jwt = token(id);
     for (const url of ['/api/users', '/api/audit-logs', '/admin', '/admin/users'])
       assert.equal((await request(url, { jwt })).status, 403);
-    for (const [url, method] of [['/api/users','POST'], ['/api/users/1','PATCH'], ['/api/users/1/reset-password','POST'], ['/api/auth/register','POST']])
+    for (const [url, method] of [['/api/users','POST'], ['/api/users/1','PATCH'], ['/api/users/1/reset-password','POST']])
       assert.equal((await request(url, { jwt, method })).status, 403);
   }
   assert.equal(logs.length, 0);
 });
-test('public registration cannot create an account of any role', async () => {
-  const result = await request('/api/auth/register', { method: 'POST', body: { username: 'intruder', password: 'Intruder123', role: 'admin' } });
-  assert.equal(result.status, 401); assert.equal(rows.length, 4);
+test('registration endpoint and page are removed; accounts come only from Admin', async () => {
+  for (const jwt of [undefined, token(1)]) {
+    const result = await request('/api/auth/register', { method: 'POST', jwt, body: { username: 'intruder', password: 'Intruder123', role: 'admin' } });
+    assert.equal(result.status, 404);
+  }
+  assert.equal(rows.length, 4); assert.equal(logs.length, 0);
+  const page = await request('/register');
+  assert.equal(page.status, 301); assert.equal(page.headers.get('location'), '/login');
 });
 test('Admin can read page, users, and audit logs without hashes', async () => {
   const jwt = token();
