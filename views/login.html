@@ -112,26 +112,27 @@
   }
 
   .tabs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    background: #eef1f6;
-    border-radius: 6px;
-    padding: 3px;
-    gap: 3px;
-    margin-bottom: 18px;
-  }
-  .tab {
-    border: 0;
-    background: transparent;
-    font: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b7690;
-    padding: 8px 0;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background .15s, color .15s;
-  }
+  display: grid;
+  grid-template-columns: 1fr;         
+  background: #eef1f6;
+  border-radius: 6px;
+  padding: 3px;
+  gap: 3px;
+  margin-bottom: 18px;
+}
+.tab {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7690;
+  padding: 8px 0;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;                  
+  transition: background .15s, color .15s;
+}
   .tab.active { background: var(--blue); color: #fff; }
 
   .panel { display: none; }
@@ -193,8 +194,6 @@
     cursor: pointer;
     transition: filter .15s;
   }
-  .btn:hover { filter: brightness(.95); }
-  #panel-daftar .btn { margin-top: 10px; }
 
   .alert {
     display: none;
@@ -243,7 +242,6 @@
     <div class="card">
       <div class="tabs" role="tablist">
         <a class="tab active" href="/login" role="tab">Masuk</a>
-        <a class="tab" href="/register" role="tab">Daftar</a>
       </div>
 
       <section class="panel active">
@@ -253,7 +251,7 @@
         <div id="message" class="alert" role="alert" aria-live="polite"></div>
         <form id="loginForm" novalidate>
           <div class="field">
-            <label class="lbl" for="username">Email atau nama pengguna</label>
+            <label class="lbl" for="username">Nama pengguna</label>
             <input type="text" id="username" name="username" autocomplete="username"
               autocapitalize="none" spellcheck="false" maxlength="50" required>
           </div>
@@ -263,7 +261,6 @@
           </div>
           <div class="row">
             <label><input type="checkbox" name="remember"> Ingat saya</label>
-            <a href="/lupa-password">Lupa kata sandi?</a>
           </div>
           <button type="submit" class="btn" id="submitButton">Masuk</button>
         </form>
