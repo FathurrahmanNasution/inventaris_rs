@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Monitoring Kadaluarsa - Inventaris Obat RS</title>
+  <style>
+    :root {
+      --navy: #1a365d; --sidebar: #2c3e5a; --sidebar-active: #4a5a74; --sidebar-text: #a9b4c6; --brand: #63b3ed;
+      --th-bg: #edf2f7; --border: #cbd5e0; --row-line: #e2e8f0; --text: #2d3748; --muted: #4a5568;
+      --blue: #2b6cb0; --active-text: #22543d; --page-bg: #edf1f7; --red: #e0414b; --orange: #dd6b20;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Segoe UI", Verdana, Arial, sans-serif; background: var(--page-bg); color: var(--text); }
+    .window { display: flex; flex-direction: column; height: 100vh; height: 100dvh; }
+
+    header { background: var(--navy); color: #fff; min-height: 80px; padding: 12px 28px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+    header h1 { margin: 0; font-size: 19px; text-align: center; }
+    .account { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap; }
+    #identity { font-size: 13px; color: #cbd5e0; }
+    nav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    nav a { color: #fff; font-size: 13px; }
+
+    .body { display: flex; flex: 1; min-height: 0; }
+    aside { width: 265px; flex-shrink: 0; background: var(--sidebar); padding: 20px 14px; overflow-y: auto; }
+    .brand { color: var(--brand); font-weight: 700; font-size: 17px; padding: 6px 14px 22px; letter-spacing: .3px; }
+    aside a { display: block; color: var(--sidebar-text); text-decoration: none; font-size: 15px; padding: 18px 22px; border-radius: 4px; }
+    aside a.active { background: var(--sidebar-active); color: #fff; }
+    main { flex: 1; min-width: 0; padding: 22px 28px 44px; overflow-y: auto; }
+
+    .page-title { font-size: 22px; font-weight: 700; color: var(--navy); margin: 0 0 4px; }
+    .subtitle { margin: 0 0 18px; font-size: 13px; color: #718096; }
+    button { border: 0; border-radius: 3px; padding: 10px 14px; background: var(--blue); color: #fff; cursor: pointer; font-weight: bold; font-family: inherit; }
+    button:hover { filter: brightness(.92); } button:disabled { opacity: .55; cursor: not-allowed; }
+    button:focus-visible, a:focus-visible { outline: 3px solid #bee3f8; outline-offset: 2px; }
+    .secondary { color: var(--text); background: var(--th-bg); }
+
+    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .tab { background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 3px; padding: 16px 10px; font-size: 14px; }
+    .tab.active { background: var(--red); border-color: var(--red); color: #fff; }
+
+    .table-wrap { background: #fff; border: 1px solid var(--row-line); border-radius: 4px; overflow-x: auto; }
+    table { width: 100%; min-width: 820px; border-collapse: collapse; text-align: left; }
+    th { font-size: 13px; font-weight: 700; color: var(--text); background: #f7f9fc; padding: 16px 14px; border-bottom: 1px solid var(--row-line); }
+    td { padding: 18px 14px; border-bottom: 1px solid var(--row-line); font-size: 13px; color: #718096; }
+    tr:last-child td { border-bottom: 0; }
+    td.name { font-weight: 700; color: var(--navy); font-size: 14px; }
+    .pill { display: inline-block; padding: 5px 12px; border-radius: 3px; font-size: 12px; font-weight: 700; background: #fed7d7; color: #c53030; }
+    .pill.warn { background: #feebc8; color: #7b341e; }
+    td.stock { color: var(--blue); font-weight: 700; font-size: 14px; }
+    .act { background: var(--orange); padding: 9px 14px; font-size: 13px; }
+
+    .message { padding: 12px; border-radius: 4px; margin: 0 0 14px; background: #c6f6d5; color: var(--active-text); font-size: 14px; }
+    .message.error { background: #fed7d7; color: #9b2c2c; }
+    [hidden] { display: none !important; }
+
+    @media (max-width: 900px) {
+      .window { height: auto; min-height: 100vh; }
+      header { grid-template-columns: 1fr; text-align: center; position: sticky; top: 0; z-index: 10; } .account { justify-content: center; }
+      .body { flex-direction: column; min-height: auto; } aside { width: 100%; display: flex; flex-wrap: wrap; align-items: center; padding: 10px; overflow-y: visible; }
+      .brand { padding: 6px 14px; } aside a { padding: 10px 14px; }
+      main { padding: 20px; overflow-y: visible; }
+    }
+    @media (max-width: 600px) { .tabs { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <header>
+      <span></span>
+      <h1>Sistem Inventaris Stok Obat RS – Monitoring Obat Mendekati Kedaluwarsa</h1>
+      <div class="account">
+        <small id="identity">Memuat sesi...</small>
+        <nav aria-label="Navigasi akun"><a href="/dashboard">Dashboard</a><a href="/account/password">Ganti Kata Sandi</a><button id="logout" class="secondary">Logout</button></nav>
+      </div>
+    </header>
+    <div class="body">
+      <aside aria-label="Menu utama">
+        <div class="brand">RS INVENTARIS</div>
+        <a href="/dashboard">Dashboard</a>
+        <a href="#">Data Obat</a>
+        <a href="#">Stok Masuk</a>
+        <a href="/stok-keluar">Stok Keluar</a>
+        <a href="/monitoring" class="active" aria-current="page">Monitoring</a>
+        <a href="/laporan">Laporan</a>
+        <a href="/admin" id="navUsers" hidden>Pengguna</a>
+      </aside>
+      <main>
+        <h2 class="page-title">Pusat Monitoring Kadaluarsa &amp; Ambang Batas Minimum</h2>
+        <p class="subtitle">Tindak lanjuti batch yang mendekati kedaluwarsa.</p>
+        <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+        <div class="tabs" role="tablist" aria-label="Filter alert">
+          <button class="tab" id="tabAll" role="tab" data-filter="all">Semua Alert (0)</button>
+          <button class="tab active" id="tabCritical" role="tab" data-filter="critical">Kritis &lt; 30 Hari (0)</button>
+          <button class="tab" id="tabWarning" role="tab" data-filter="warning">Perhatian 30-90 Hari (0)</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nama Obat</th><th>No. Batch</th><th>Tgl Kedaluwarsa</th><th>Sisa Hari</th><th>Sisa Stok</th><th>Tindakan / Aksi</th></tr></thead>
+            <tbody id="alertBody"></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script>
+    const $ = id => document.getElementById(id);
+    const roleNames = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
+    const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+
+    // Data diambil dari API backend monitoring (/api/monitoring/expiry).
+    let alerts = [];
+    let summary = { all: 0, critical: 0, warning: 0 };
+    let filter = 'critical';
+
+    function fmtDate(iso) {
+      if (!iso) return '-';
+      const d = new Date(String(iso).slice(0, 10) + 'T00:00:00Z');
+      return String(d.getUTCDate()).padStart(2, '0') + '-' + MONTHS[d.getUTCMonth()] + '-' + d.getUTCFullYear();
+    }
+    function fmtDays(days) { return days < 0 ? 'Lewat ' + Math.abs(days) + ' Hari' : days + ' Hari'; }
+    function message(text, error = false) { const el = $('message'); el.textContent = text; el.className = 'message' + (error ? ' error' : ''); el.hidden = false; }
+    const isCritical = a => a.status === 'critical';
+    // Heuristik aksi: batch kritis diajukan retur, perhatian diprioritaskan distribusi.
+    const actionFor = a => isCritical(a) ? { type: 'retur', label: 'Ajukan Retur' } : { type: 'distribusi', label: 'Distribusi Cepat' };
+
+    function render() {
+      $('tabAll').textContent = 'Semua Alert (' + summary.all + ')';
+      $('tabCritical').textContent = 'Kritis < 30 Hari (' + summary.critical + ')';
+      $('tabWarning').textContent = 'Perhatian 30-90 Hari (' + summary.warning + ')';
+      document.querySelectorAll('.tab').forEach(t => { const on = t.dataset.filter === filter; t.classList.toggle('active', on); t.setAttribute('aria-selected', on); });
+      const rows = (filter === 'all' ? alerts : alerts.filter(a => a.status === filter)).slice()
+        .sort((a, b) => a.days_remaining - b.days_remaining);
+      $('alertBody').replaceChildren();
+      for (const a of rows) {
+        const tr = document.createElement('tr');
+        const add = (text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.append(td); return td; };
+        add(a.name, 'name'); add(a.batch_number); add(fmtDate(a.expired_date));
+        const pill = document.createElement('span'); pill.className = 'pill' + (isCritical(a) ? '' : ' warn'); pill.textContent = fmtDays(a.days_remaining);
+        add('').append(pill);
+        add(a.current_qty + ' ' + (a.unit || ''), 'stock');
+        const act = actionFor(a);
+        const btn = document.createElement('button'); btn.className = 'act'; btn.textContent = act.label;
+        btn.addEventListener('click', async () => {
+          if (!confirm(act.label + ' untuk batch #' + a.batch_number + ' (' + a.name + ')?')) return;
+          btn.disabled = true;
+          try {
+            await api('/api/monitoring/action', 'POST', { batch_number: a.batch_number, action: act.type });
+            message(act.label + ' untuk batch #' + a.batch_number + ' berhasil dicatat.');
+          } catch (error) { message(error.message, true); btn.disabled = false; }
+        });
+        add('').append(btn);
+        $('alertBody').append(tr);
+      }
+      if (!rows.length) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 6; td.textContent = 'Tidak ada alert pada kategori ini.'; tr.append(td); $('alertBody').append(tr); }
+    }
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { filter = t.dataset.filter; $('message').hidden = true; render(); }));
+
+    async function loadAlerts() {
+      try {
+        const data = (await api('/api/monitoring/expiry?filter=all')).data;
+        alerts = data.alerts || [];
+        summary = data.summary || { all: 0, critical: 0, warning: 0 };
+      } catch (error) { message('Gagal memuat data alert: ' + error.message, true); }
+      render();
+    }
+
+    async function api(url, method = 'GET', body) {
+      const response = await fetch(url, { method, credentials: 'same-origin',
+        headers: method === 'GET' ? {} : { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body) });
+      if (response.status === 401) { location.assign('/login'); throw new Error('Silakan login kembali.'); }
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Permintaan gagal.');
+      return result;
+    }
+    $('logout').addEventListener('click', async () => {
+      $('logout').disabled = true;
+      try { await api('/api/auth/logout', 'POST', {}); location.assign('/login'); }
+      catch (error) { message(error.message, true); $('logout').disabled = false; }
+    });
+
+    render();
+    loadAlerts();
+    (async () => {
+      try {
+        const user = (await api('/api/auth/me')).data.user;
+        $('identity').textContent = user.username + ' | ' + (roleNames[user.role] || user.role);
+        $('navUsers').hidden = user.role !== 'admin'; // Manajemen Pengguna hanya untuk Admin
+      } catch (error) { $('identity').textContent = 'Sesi tidak terhubung'; }
+    })();
+  </script>
+</body>
+</html>

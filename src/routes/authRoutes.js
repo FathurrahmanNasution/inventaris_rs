@@ -1,9 +1,8 @@
 const router = require('express').Router();
 const controller = require('../controllers/authController');
-const userController = require('../controllers/userController');
-const { authenticateToken, requireRole } = require('../middlewares/authMiddleware');
+const { authenticateToken } = require('../middlewares/authMiddleware');
+// Tidak ada endpoint registrasi: akun staf dibuat Admin lewat POST /api/users.
 router.post('/login', controller.login);
-router.post('/register', authenticateToken, requireRole('admin'), userController.createUser);
 router.post('/logout', authenticateToken, controller.logout);
 router.get('/me', authenticateToken, controller.getMe);
 router.patch('/password', authenticateToken, controller.changePassword);
