@@ -1,135 +1,507 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard - Inventaris Stok Obat RS</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 0; background: #f1f5f9; color: #1e293b; }
-    .header { background: #0f172a; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
-    .header h2 { margin: 0; font-size: 18px; }
-    .main { max-width: 900px; margin: 30px auto; padding: 0 20px; }
-    .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); margin-bottom: 20px; }
-    .badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-weight: bold; font-size: 13px; text-transform: uppercase; }
-    .badge-admin { background: #fdf2f8; color: #be185d; border: 1px solid #fbcfe8; }
-    .badge-gudang { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-    .badge-pelayanan { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
-    .badge-kepala_farmasi { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-top: 20px; }
-    .menu-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 6px; text-decoration: none; color: inherit; transition: all 0.2s; }
-    a.menu-item:hover { border-color: #0284c7; background: #f0f9ff; }
-    .menu-item h3 { margin: 0 0 6px 0; font-size: 16px; color: #0284c7; }
-    .menu-item p { margin: 0; font-size: 13px; color: #64748b; }
-    .btn-logout { background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-    .btn-logout:hover { background: #dc2626; }
-    .admin-banner { background: #ede9fe; border-left: 4px solid #7c3aed; padding: 15px; border-radius: 4px; margin-top: 15px; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RS Inventaris – Dashboard Utama</title>
+<style>
+  :root {
+    --navy: #2f3e63;
+    --navy-dark: #212f63;
+    --blue: #4366b2;
+    --green: #4aa35e;
+    --ink: #1f2a4a;
+    --muted: #7b869c;
+    --line: #e3e7ee;
+    --bg: #f3f5f9;
+    --red: #d9473f;
+    --orange: #e8833a;
+  }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: "Segoe UI", Verdana, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    display: grid;
+    grid-template-columns: 265px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100vh;
+    height: 100dvh;
+  }
+  [hidden] {
+    display: none !important;
+  }
+  .top {
+    grid-column: 1 / -1;
+    background: #1a365d;
+    color: #fff;
+    min-height: 80px;
+    padding: 12px 28px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+  }
+  .top h1 {
+    font-size: 19px;
+    text-align: center;
+  }
+  .account {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  #identity {
+    font-size: 13px;
+    color: #cbd5e0;
+  }
+  .top nav {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .top nav a {
+    color: #fff;
+    font-size: 13px;
+    text-decoration: none;
+  }
+  .top button {
+    border: 0;
+    border-radius: 3px;
+    padding: 10px 14px;
+    background: #edf2f7;
+    color: #2d3748;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .side {
+    background: #2c3e5a;
+    padding: 20px 14px;
+    overflow-y: auto;
+  }
+  .brand {
+    color: #63b3ed;
+    font-weight: 700;
+    font-size: 17px;
+    padding: 6px 14px 22px;
+    letter-spacing: .3px;
+  }
+  .side a {
+    display: block;
+    color: #a9b4c6;
+    text-decoration: none;
+    font-size: 15px;
+    padding: 18px 22px;
+    border-radius: 4px;
+  }
+  .side a.on {
+    background: #4a5a74;
+    color: #fff;
+  }
+  main {
+    padding: 26px 30px;
+    min-width: 0;
+    overflow-y: auto;
+  }
+  .head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  h1 { font-size: 20px; }
+  h2 { font-size: 14px; margin-bottom: 12px; }
+  .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  
+  .card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-block;
+    border: 0;
+    border-radius: 4px;
+    background: var(--green);
+    color: #fff;
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 9px 14px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .btn.blue { background: var(--blue); }
+  .btn.ghost { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+  .btn:hover { filter: brightness(.95); }
+  .btn:disabled { opacity: .6; cursor: wait; }
+
+  /* KPI & Tiles */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .k {
+    background: #fff;
+    border: 1.5px solid var(--blue);
+    border-radius: 6px;
+    padding: 12px 14px;
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+  .k.green { border-color: #3fb768; }
+  .k.orange { border-color: var(--orange); }
+  .k.red { border-color: var(--red); }
+  .k span { display: block; font-size: 11.5px; font-weight: 600; }
+  .k strong { display: block; font-size: 20px; margin: 6px 0 4px; color: var(--blue); }
+  .k.green strong { color: #2f9a55; }
+  .k.orange strong { color: var(--orange); }
+  .k.red strong { color: var(--red); }
+  .k small { font-size: 10.5px; color: var(--muted); }
+
+  .row4 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .tile {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .tile:hover { border-color: var(--blue); }
+  .ic {
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    flex: none;
+    background: var(--blue);
+  }
+  .tile b { display: block; font-size: 12.5px; }
+  .tile small { font-size: 10.5px; color: var(--muted); }
+
+  /* Grid & Chart */
+  .grid2 {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 16px;
+  }
+  .chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    height: 200px;
+  }
+  .bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    height: 100%;
+    font-size: 11px;
+    gap: 4px;
+  }
+  .bar i {
+    display: block;
+    width: 100%;
+    background: #5b8fe0;
+    border-radius: 2px 2px 0 0;
+    min-height: 2px;
+  }
+  .bar b { color: var(--blue); }
+  .bar small { color: var(--muted); }
+
+  /* Tabel & Badge */
+  .tw { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th { background: #eef1f6; text-align: left; font-size: 11.5px; padding: 10px; white-space: nowrap; }
+  td { padding: 10px; border-bottom: 1px solid var(--line); }
+  td.num, th.num { text-align: right; }
+  td.mut { color: var(--muted); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge.green { background: #dcfce7; color: #15803d; }
+  .badge.yellow { background: #fdf0cf; color: #8a5a00; }
+  .badge.red { background: #fde2e0; color: #b3261e; }
+  .badge.gray { background: #e8ebf1; color: #5b667d; }
+
+  /* Formulir & Alert */
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  input, select {
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: #f3f5f9;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    height: 36px;
+    padding: 0 10px;
+    outline: none;
+    min-width: 0;
+  }
+  input:focus, select:focus {
+    border-color: var(--blue);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(67, 102, 178, .15);
+  }
+  .tools input { flex: 1; min-width: 200px; }
+  label.lbl { display: block; font-size: 11px; font-weight: 600; margin-bottom: 5px; }
+  .f { margin-bottom: 12px; }
+  .f input, .f select { width: 100%; }
+  .frow { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  
+  .alert {
+    display: none;
+    font-size: 12px;
+    padding: 9px 12px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    background: #fdecea;
+    color: #b3261e;
+  }
+  .alert.show { display: block; }
+  .alert.ok { background: #dcfce7; color: #15803d; }
+
+  /* Elemen Tambahan */
+  ul { list-style: none; }
+  li.al { padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  li.al small { font-size: 11px; font-weight: 600; }
+  .r { color: var(--red); }
+  .o { color: var(--orange); }
+
+  .cr { margin-bottom: 12px; font-size: 12px; }
+  .cr div:first-child { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .trk { height: 5px; background: #eef1f6; border-radius: 3px; }
+  .trk i { display: block; height: 100%; border-radius: 3px; }
+
+  dialog {
+    border: 0;
+    border-radius: 8px;
+    padding: 20px;
+    width: min(440px, 92vw);
+    margin: auto;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .3);
+  }
+  dialog::backdrop { background: rgba(31, 42, 74, .5); }
+  .empty { text-align: center; color: var(--muted); padding: 24px; }
+  .lnk { background: none; border: 0; color: var(--red); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+
+  @media(max-width: 900px) {
+    body { height: auto; min-height: 100vh; grid-template-columns: 1fr; grid-template-rows: auto; }
+    .top { grid-template-columns: 1fr; text-align: center; position: sticky; top: 0; z-index: 10; }
+    .account { justify-content: center; }
+    .side { display: flex; flex-wrap: wrap; align-items: center; padding: 10px; overflow-y: visible; }
+    .brand { padding: 6px 14px; }
+    .side a { padding: 10px 14px; }
+    .grid2 { grid-template-columns: 1fr; }
+    main { padding: 18px 14px; overflow-y: visible; }
+  }
+  @media print {
+    .top, .side, .noprint { display: none !important; }
+    body { display: block; background: #fff; }
+    .card { border: 0; }
+  }
+</style>
 </head>
 <body>
-  <div class="header">
-    <h2>🏥 Dashboard Inventaris Obat RS</h2>
-    <div>
-      <span id="userGreeting" style="margin-right: 15px; font-size: 14px;"></span>
-      <a href="/account/password" style="color: white; margin-right: 15px;">Ganti Kata Sandi</a>
-      <button id="btnLogout" class="btn-logout">Logout</button>
-    </div>
-  </div>
+<main>
+  <h1>Dashboard Ringkasan Inventaris Obat Real-Time</h1>
+  <p class="sub" id="sub" style="margin-bottom:16px"></p>
+  <div id="msg" class="alert" role="alert"></div>
 
-  <div class="main">
-    <div class="card" id="profileCard">
-      <div id="loadingMsg">Memuat informasi sesi pengguna...</div>
-      <div id="contentSection" style="display: none;">
-        <h3 style="margin-top: 0;">Status Pengguna Aktif</h3>
-        <p><strong>Username:</strong> <span id="usernameTxt"></span></p>
-        <p><strong>Peran / Hak Akses:</strong> <span id="roleBadge" class="badge"></span></p>
-        <p><strong>Status Akun:</strong> <span id="statusTxt" style="color: #16a34a; font-weight: bold;"></span></p>
+  <section class="row4">
+    <div class="k"><span>Total jenis obat</span><strong id="k1">–</strong><small>Aktif di katalog</small></div>
+    <div class="k green"><span>Nilai aset obat</span><strong id="k2">–</strong><small>Valuasi stok fisik</small></div>
+    <a class="k orange" href="/data-obat?filter=low"><span>Stok menipis / kritis</span><strong id="k3">–</strong><small>Perlu re-order</small></a>
+    <a class="k red" href="/data-obat?filter=expiring"><span>Mendekati kedaluwarsa</span><strong id="k4">–</strong><small>&lt; 30 hari (retur)</small></a>
+  </section>
 
-        <div id="adminNotice" class="admin-banner" style="display: none;">
-          <strong>🛡️ Hak Akses Administrator IT Terdeteksi:</strong>
-          <p style="margin: 5px 0 10px 0; font-size: 14px;">Sebagai Administrator IT, Anda dapat mengelola akun pengguna sistem dan memantau audit trail.</p>
-          <a href="/admin" style="display: inline-block; background: #7c3aed; color: white; padding: 8px 14px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold;">Buka Halaman Manajemen Pengguna (Admin Page) &rarr;</a>
-        </div>
+  <section class="row4">
+    <a class="tile" href="/stok-keluar"><div class="ic" style="background:#4aa35e">↗</div><div><b>Catat stok keluar</b><small>Distribusi &amp; resep (FEFO)</small></div></a>
+    <a class="tile" href="/data-obat?add=1" data-need="kelolaObat"><div class="ic">+</div><div><b>Tambah obat</b><small>Master data katalog</small></div></a>
+    <a class="tile" href="/data-obat?filter=expiring"><div class="ic" style="background:var(--red)">!</div><div><b>Cek kedaluwarsa</b><small id="t3">–</small></div></a>
+    <a class="tile" href="/data-obat?filter=low"><div class="ic" style="background:var(--orange)">↻</div><div><b>Re-order obat</b><small id="t4">–</small></div></a>
+  </section>
 
-        <h3 style="margin-top: 30px; margin-bottom: 5px;">Modul Operasional Sistem</h3>
-        <p style="font-size: 14px; color: #64748b; margin-top: 0;">Modul yang tersedia sesuai spesifikasi SRS:</p>
+  <section class="grid2">
+    <div class="card"><h2>Grafik tren pengeluaran obat (6 bulan terakhir)</h2><div class="chart" id="chart"></div></div>
+    <div class="card"><h2 style="color:var(--red)">Alert: obat kritis &amp; kedaluwarsa</h2><ul id="alerts"><li class="empty">Memuat…</li></ul></div>
+  </section>
 
-        <div class="menu-grid">
-          <div class="menu-item">
-            <h3>📦 Data Master Obat</h3>
-            <p>Katalog obat, kategori terapi, satuan, dan ambang batas minimum.</p>
-          </div>
-          <div class="menu-item">
-            <h3>📥 Stok Masuk</h3>
-            <p>Penerimaan obat dari PBF beserta batch & tanggal kedaluwarsa.</p>
-          </div>
-          <a href="/stok-keluar" class="menu-item">
-            <h3>📤 Stok Keluar (FEFO)</h3>
-            <p>Pengeluaran obat dengan alokasi otomatis First Expired First Out.</p>
-          </a>
-          <a href="/monitoring" class="menu-item">
-            <h3>⚠️ Monitoring & EWS</h3>
-            <p>Peringatan stok menipis dan mendekati ED (< 30 hari).</p>
-          </a>
-          <a href="/laporan" class="menu-item">
-            <h3>📋 Stock Opname & Laporan</h3>
-            <p>Audit fisik persediaan berkala dan ekspor PDF/Excel.</p>
-          </a>
-          <a href="/admin" id="adminMenuCard" class="menu-item" style="display: none; border-color: #7c3aed;">
-            <h3 style="color: #7c3aed;">👥 Manajemen Pengguna</h3>
-            <p>Pengaturan akun staf, konfigurasi RBAC, dan audit trail log.</p>
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
+  <section class="grid2">
+    <div class="card"><h2>Transaksi terakhir</h2><div class="tw"><table>
+      <thead><tr><th>Waktu</th><th>Referensi</th><th>Obat</th><th>Jumlah</th><th>Jenis</th></tr></thead>
+      <tbody id="tx"><tr><td colspan="5" class="empty">Memuat…</td></tr></tbody></table></div></div>
+    <div class="card"><h2>Komposisi stok per kategori</h2><div id="cats"></div></div>
+  </section>
+</main>
 
-  <script>
-    async function initDashboard() {
-      try {
-        const res = await fetch('/api/auth/me', { credentials: 'same-origin' });
+<script>
+/*BAGIAN 1: DEMO DATA*/
+// Ganti objek DEMO_DATA ini atau ubah pemanggilan di bawah ke endpoint API dashboard backend (misal: /api/dashboard)
+const DEMO_DATA = {
+  totalMedicines: 128,
+  assetValue: 187650000,
+  lowStock: 8,
+  nearExpiry: 5,
+  monthlyOut: [
+    { month: 'Jun', qty: 420 },
+    { month: 'Jul', qty: 510 },
+    { month: 'Agu', qty: 465 },
+    { month: 'Sep', qty: 590 },
+    { month: 'Okt', qty: 545 },
+    { month: 'Nov', qty: 620 }
+  ],
+  alerts: [
+    { name: 'Paracetamol 500 mg', level: 'red', detail: 'Stok tersisa 12 strip — di bawah batas minimum' },
+    { name: 'Amoxicillin 500 mg', level: 'red', detail: 'Stok tersisa 8 strip — perlu segera re-order' },
+    { name: 'Cetirizine 10 mg', level: 'orange', detail: 'Batch mendekati kedaluwarsa' },
+    { name: 'Omeprazole 20 mg', level: 'orange', detail: 'Batch mendekati kedaluwarsa' }
+  ],
+  recentTransactions: [
+    { created_at: new Date().toISOString(), reference_number: 'TRX-2026-1101', medicine_name: 'Paracetamol 500 mg', quantity: 20, unit: 'strip', type: 'OUT' },
+    { created_at: new Date(Date.now() - 3600000).toISOString(), reference_number: 'TRX-2026-1100', medicine_name: 'Infus NaCl 0,9%', quantity: 50, unit: 'botol', type: 'IN' },
+    { created_at: new Date(Date.now() - 86400000).toISOString(), reference_number: 'TRX-2026-1099', medicine_name: 'Amoxicillin 500 mg', quantity: 10, unit: 'strip', type: 'OUT' },
+    { created_at: new Date(Date.now() - 172800000).toISOString(), reference_number: 'TRX-2026-1098', medicine_name: 'Vitamin C', quantity: 30, unit: 'strip', type: 'IN' },
+    { created_at: new Date(Date.now() - 259200000).toISOString(), reference_number: 'TRX-2026-1097', medicine_name: 'Omeprazole 20 mg', quantity: 15, unit: 'strip', type: 'OUT' }
+  ],
+  categoryShare: [
+    { name: 'Analgesik & Antipiretik', percent: 32 },
+    { name: 'Antibiotik', percent: 26 },
+    { name: 'Vitamin & Suplemen', percent: 18 },
+    { name: 'Obat Saluran Pencernaan', percent: 14 },
+    { name: 'Lainnya', percent: 10 }
+  ]
+};
 
-        if (!res.ok) {
-          alert('Sesi belum terautentikasi atau telah kedaluwarsa. Silakan login terlebih dahulu.');
-          window.location.href = '/login';
-          return;
-        }
+const ROLE_NAMES = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
+const ROLE_CAN = {
+  stokMasuk: ['gudang', 'kepala_farmasi'],
+  kelolaObat: ['kepala_farmasi']
+};
+const MENU = [['/dashboard','Dashboard'],['/data-obat','Data Obat'],['/stok-masuk','Stok Masuk'],['/stok-keluar','Stok Keluar'],['/monitoring','Monitoring'],['/laporan','Laporan'],['/admin','Pengguna']];
+const COL = ['#4a90e2', '#3fb768', '#e8833a', '#7aa7ea', '#6b7690'];
 
-        const data = await res.json();
-        const user = data.data.user;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rp = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+let me = null;
+const can = rule => !me || ROLE_CAN[rule].includes(me.role);
 
-        document.getElementById('loadingMsg').style.display = 'none';
-        document.getElementById('contentSection').style.display = 'block';
+// Fungsi API Utama
+async function api(url, opt = {}) {
+  const r = await fetch(url, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, ...opt, body: opt.body ? JSON.stringify(opt.body) : undefined });
+  if (r.status === 401) { location.assign('/login'); throw new Error('Sesi berakhir. Silakan masuk lagi.'); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.success === false) throw new Error(j.message || 'Permintaan gagal. Coba lagi.');
+  return j.data;
+}
 
-        document.getElementById('userGreeting').textContent = `Halo, ${user.username} (${user.role})`;
-        document.getElementById('usernameTxt').textContent = user.username;
-        document.getElementById('statusTxt').textContent = user.status;
+function flash(el, msg, ok) { el.textContent = msg; el.className = 'alert show' + (ok ? ' ok' : ''); }
 
-        const roleBadge = document.getElementById('roleBadge');
-        roleBadge.textContent = user.role.replace('_', ' ');
-        roleBadge.className = `badge badge-${user.role}`;
+function when(iso) {
+  const d = new Date(iso), t = new Date(), y = new Date(t.getTime() - 864e5);
+  const same = (a, b) => a.toDateString() === b.toDateString();
+  if (same(d, t)) return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+  return same(d, y) ? 'Kemarin' : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+}
 
-        if (user.role === 'admin') {
-          document.querySelectorAll('.menu-item:not(#adminMenuCard)').forEach(item => item.hidden = true);
-          document.getElementById('adminNotice').style.display = 'block';
-          document.getElementById('adminMenuCard').style.display = 'block';
-        }
-      } catch (err) {
-        document.getElementById('loadingMsg').textContent = 'Gagal memuat profil: ' + err.message;
-      }
-    }
+// Fungsi Boot Aplikasi & Autentikasi /api/auth/me & /api/auth/logout
+async function boot(active) {
+  const page = esc(document.title.split('– ')[1] || '');
+  document.body.insertAdjacentHTML('afterbegin',
+    `<header class="top"><span></span><h1>Sistem Inventaris Stok Obat RS - ${page}</h1><div class="account"><small id="identity">Memuat sesi...</small><nav aria-label="Navigasi akun"><a href="/dashboard">Dashboard</a><a href="/account/password">Ganti Kata Sandi</a><button id="logout" class="secondary">Logout</button></nav></div></header>` +
+    `<aside class="side" aria-label="Menu utama"><div class="brand">RS INVENTARIS</div>` +
+    MENU.map(([h, t]) => `<a href="${h}" class="${h === active ? 'on' : ''}"${h === '/admin' ? ' id="menuAdmin" hidden' : ''}>${t}</a>`).join('') + `</aside>`);
+  
+  $('logout').onclick = async () => { 
+    $('logout').disabled = true; 
+    try { 
+      await api('/api/auth/logout', { method: 'POST', body: {} }); 
+    } catch {} 
+    location.assign('/login'); 
+  };
 
-    document.getElementById('btnLogout').addEventListener('click', async () => {
-      try {
-        const response = await fetch('/api/auth/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
-        if (!response.ok && response.status !== 401) throw new Error('Logout gagal. Silakan coba lagi.');
-      } catch (error) { alert(error.message); return; }
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('auth_user');
-      document.cookie = 'token=; path=/; max-age=0';
-      window.location.href = '/login';
-    });
+  try { 
+    me = (await api('/api/auth/me')).user; 
+  } catch { 
+    me = null; 
+  } // respons: { data: { user } }
 
-    initDashboard();
-  </script>
+  $('identity').textContent = me ? `${me.username} | ${ROLE_NAMES[me.role] || me.role}` : '';
+  $('menuAdmin').hidden = !!me && me.role !== 'admin';
+  document.querySelectorAll('[data-need]').forEach(e => { if (!can(e.dataset.need)) e.hidden = true; });
+}
+(async () => {
+  await boot('/dashboard');
+  const nm = me && (me.fullName || me.full_name || me.name || me.username);
+  $('sub').textContent = (nm ? `Selamat datang, ${nm} | ` : '') + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + ' | Data dashboard simulasi';
+  
+  try {
+    // [GANTI KETIKA API DASHBOARD SIAP] Ubah baris ini ke pemanggilan API backend yang sebenarnya (misal: await api('/api/dashboard'))
+    const d = DEMO_DATA; 
+    
+    $('k1').textContent = Number(d.totalMedicines).toLocaleString('id-ID') + ' Item';
+    $('k2').textContent = rp(d.assetValue);
+    $('k3').textContent = d.lowStock + ' Obat';
+    $('k4').textContent = d.nearExpiry + ' Batch';
+    $('t3').textContent = d.nearExpiry + ' batch < 30 hari';
+    $('t4').textContent = d.lowStock + ' obat di bawah batas min';
+
+    const out = d.monthlyOut || [], max = Math.max(...out.map(m => m.qty), 1);
+    $('chart').innerHTML = out.length ? out.map(m => `<div class="bar"><b>${esc(m.qty)}</b><i style="height:${Math.round((m.qty / max) * 150)}px"></i><small>${esc(m.month)}</small></div>`).join('') : '<p class="empty">Belum ada data pengeluaran.</p>';
+
+    const a = d.alerts || [];
+    $('alerts').innerHTML = a.length ? a.map(x => `<li class="al"><b>${esc(x.name)}</b><br><small class="${x.level === 'red' ? 'r' : 'o'}">${esc(x.detail)}</small></li>`).join('') : '<li class="empty">Tidak ada peringatan.</li>';
+
+    const t = d.recentTransactions || [];
+    $('tx').innerHTML = t.length ? t.map(x => `<tr><td class="mut">${esc(when(x.created_at))}</td><td class="mut">${esc(x.reference_number)}</td><td><strong>${esc(x.medicine_name)}</strong></td><td class="mut">${esc(x.quantity)} ${esc(x.unit)}</td><td><span class="badge ${x.type === 'IN' ? 'green' : 'yellow'}">${x.type === 'IN' ? 'Masuk' : 'Keluar'}</span></td></tr>`).join('') : '<tr><td colspan="5" class="empty">Belum ada transaksi.</td></tr>';
+
+    const c = d.categoryShare || [];
+    $('cats').innerHTML = c.length ? c.map((x, i) => `<div class="cr"><div><span>${esc(x.name)}</span><span>${esc(x.percent)}%</span></div><div class="trk"><i style="width:${Math.min(100, +x.percent || 0)}%;background:${COL[i % COL.length]}"></i></div></div>`).join('') : '<p class="empty">Belum ada data stok.</p>';
+  } catch (e) { 
+    flash($('msg'), e.message); 
+    $('alerts').innerHTML = ''; 
+  }
+})();
+</script>
 </body>
 </html>
