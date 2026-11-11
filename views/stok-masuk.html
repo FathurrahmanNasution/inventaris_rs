@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RS Inventaris – Form Transaksi Stok Masuk</title>
+  <style>
+    :root {
+      --navy: #2f3e63;
+      --navy-dark: #212f63;
+      --blue: #4366b2;
+      --green: #4aa35e;
+      --ink: #1f2a4a;
+      --muted: #7b869c;
+      --line: #e3e7ee;
+      --bg: #f3f5f9;
+      --red: #d9473f;
+      --orange: #e8833a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Segoe UI", Verdana, Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      display: grid;
+      grid-template-columns: 265px minmax(0, 1fr);
+      grid-template-rows: auto minmax(0, 1fr);
+      height: 100vh;
+      height: 100dvh;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .top {
+      grid-column: 1 / -1;
+      background: #1a365d;
+      color: #fff;
+      min-height: 80px;
+      padding: 12px 28px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .top h1 {
+      font-size: 19px;
+      text-align: center;
+    }
+
+    .account {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    #identity {
+      font-size: 13px;
+      color: #cbd5e0;
+    }
+
+    .top nav {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .top nav a {
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .top button {
+      border: 0;
+      border-radius: 3px;
+      padding: 10px 14px;
+      background: #edf2f7;
+      color: #2d3748;
+      font-family: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .side {
+      background: #2c3e5a;
+      padding: 20px 14px;
+      overflow-y: auto;
+    }
+
+    .brand {
+      color: #63b3ed;
+      font-weight: 700;
+      font-size: 17px;
+      padding: 6px 14px 22px;
+      letter-spacing: .3px;
+    }
+
+    .side a {
+      display: block;
+      color: #a9b4c6;
+      text-decoration: none;
+      font-size: 15px;
+      padding: 18px 22px;
+      border-radius: 4px;
+    }
+
+    .side a.on {
+      background: #4a5a74;
+      color: #fff;
+    }
+
+    main {
+      padding: 26px 30px;
+      min-width: 0;
+      overflow-y: auto;
+    }
+
+    .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: 20px;
+    }
+
+    h2 {
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+
+    .sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-block;
+      border: 0;
+      border-radius: 4px;
+      background: var(--green);
+      color: #fff;
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 9px 14px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .btn.blue {
+      background: var(--blue);
+    }
+
+    .btn.ghost {
+      background: #fff;
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .btn:hover {
+      filter: brightness(.95);
+    }
+
+    .btn:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .kpi {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--blue);
+      border-radius: 6px;
+      padding: 14px;
+      color: inherit;
+      text-decoration: none;
+      display: block;
+    }
+
+    .kpi.green {
+      border-left-color: #3fb768;
+    }
+
+    .kpi.orange {
+      border-left-color: var(--orange);
+    }
+
+    .kpi.red {
+      border-left-color: var(--red);
+    }
+
+    .kpi span {
+      font-size: 11.5px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .kpi strong {
+      display: block;
+      font-size: 22px;
+      margin-top: 6px;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 16px;
+    }
+
+    .chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      height: 210px;
+    }
+
+    .bar {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: center;
+      height: 100%;
+      font-size: 11px;
+      gap: 4px;
+    }
+
+    .bar i {
+      display: block;
+      width: 100%;
+      background: #4a90e2;
+      border-radius: 3px 3px 0 0;
+      min-height: 2px;
+    }
+
+    .bar small {
+      color: var(--muted);
+    }
+
+    .tw {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+    }
+
+    th {
+      background: #eef1f6;
+      text-align: left;
+      font-size: 11.5px;
+      padding: 10px;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    td.num, th.num {
+      text-align: right;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge.green {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .badge.yellow {
+      background: #fdf0cf;
+      color: #8a5a00;
+    }
+
+    .badge.red {
+      background: #fde2e0;
+      color: #b3261e;
+    }
+
+    .badge.gray {
+      background: #e8ebf1;
+      color: #5b667d;
+    }
+
+    .tools {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    input, select {
+      font: inherit;
+      font-size: 13px;
+      color: var(--ink);
+      background: #f3f5f9;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      height: 36px;
+      padding: 0 10px;
+      outline: none;
+      min-width: 0;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--blue);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(67, 102, 178, .15);
+    }
+
+    .tools input {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    label.lbl {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .f {
+      margin-bottom: 12px;
+    }
+
+    .f input, .f select {
+      width: 100%;
+    }
+
+    .frow {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .alert {
+      display: none;
+      font-size: 12px;
+      padding: 9px 12px;
+      border-radius: 4px;
+      margin-bottom: 12px;
+      background: #fdecea;
+      color: #b3261e;
+    }
+
+    .alert.show {
+      display: block;
+    }
+
+    .alert.ok {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .pager {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    dialog {
+      border: 0;
+      border-radius: 8px;
+      padding: 20px;
+      width: min(440px, 92vw);
+      margin: auto;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, .3);
+    }
+
+    dialog::backdrop {
+      background: rgba(31, 42, 74, .5);
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 24px;
+    }
+
+    .lnk {
+      background: none;
+      border: 0;
+      color: var(--red);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+      .top {
+        grid-template-columns: 1fr;
+        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .account {
+        justify-content: center;
+      }
+      .side {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        padding: 10px;
+        overflow-y: visible;
+      }
+      .brand {
+        padding: 6px 14px;
+      }
+      .side a {
+        padding: 10px 14px;
+      }
+      .grid2 {
+        grid-template-columns: 1fr;
+      }
+      main {
+        padding: 18px 14px;
+        overflow-y: visible;
+      }
+    }
+
+    @media print {
+      .top, .side, .noprint {
+        display: none !important;
+      }
+      body {
+        display: block;
+        background: #fff;
+      }
+      .card {
+        border: 0;
+      }
+    }
+
+    .cols {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .pt {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+
+    .pt2 {
+      margin: 4px 0 10px;
+    }
+
+    .f textarea {
+      width: 100%;
+      min-height: 76px;
+      font: inherit;
+      font-size: 13px;
+      color: var(--ink);
+      background: #f3f5f9;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 8px 10px;
+      outline: none;
+      resize: vertical;
+    }
+
+    .f textarea:focus {
+      border-color: var(--blue);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(67, 102, 178, .15);
+    }
+
+    .totalbox {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #eaf2fd;
+      border: 1px solid #b9d3f5;
+      border-radius: 4px;
+      padding: 12px 14px;
+      margin: 4px 0 12px;
+      font-size: 12.5px;
+      font-weight: 700;
+    }
+
+    .totalbox strong {
+      color: #2f9a55;
+      font-size: 15px;
+    }
+
+    .wide {
+      width: 100%;
+      padding: 12px;
+      font-size: 13px;
+    }
+
+    .fefo {
+      background: #eaf2fd;
+      border-color: #b9d3f5;
+    }
+
+    .fefo h3 {
+      color: var(--blue);
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .qb {
+      margin: 10px 0;
+      font-size: 12px;
+    }
+
+    .qb b {
+      display: block;
+    }
+
+    .qb small {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .newb {
+      border: 1.5px dashed #3fb768;
+      border-radius: 4px;
+      background: #f1faf4;
+      padding: 8px 10px;
+      font-size: 11.5px;
+      color: #2f9a55;
+      margin-top: 10px;
+    }
+
+    td.mut {
+      color: var(--muted);
+    }
+
+    td.q {
+      color: var(--blue);
+      font-weight: 700;
+    }
+
+    #receipt {
+      display: none;
+    }
+
+    #receipt th {
+      background: none;
+      width: 200px;
+    }
+
+    @media (max-width: 900px) {
+      .cols {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media print {
+      main > *:not(#receipt) {
+        display: none !important;
+      }
+      #receipt {
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <h2 class="pt">Pencatatan Stok Masuk (Penerimaan Barang dari Supplier)</h2>
+  <p class="sub" style="margin-bottom:16px">Catat batch baru beserta tanggal kedaluwarsa agar masuk ke antrean FEFO.</p>
+  <div id="msg" class="alert" role="alert"></div>
+  <div id="ok" class="alert ok" role="status"><span id="okText"></span> <button type="button" class="btn ghost" id="print" style="margin-left:8px">Cetak bukti</button></div>
+
+  <section class="cols" id="cols">
+    <form id="frm" class="card" novalidate>
+      <div class="frow">
+        <div class="f"><label class="lbl" for="ref">No. PO / Faktur</label><input id="ref" maxlength="50" placeholder="Contoh: PO-0921-015" required></div>
+        <div class="f"><label class="lbl" for="recv">Tanggal Terima</label><input id="recv" type="date" required></div>
+      </div>
+      <div class="f"><label class="lbl" for="supplier">Supplier / PBF</label><input id="supplier" list="sup" maxlength="100" autocomplete="off" required><datalist id="sup"></datalist></div>
+      <div class="f"><label class="lbl" for="med">Pilih Obat</label><select id="med" required></select></div>
+      <div class="frow">
+        <div class="f"><label class="lbl" for="batch">No. Batch</label><input id="batch" maxlength="50" required></div>
+        <div class="f"><label class="lbl" for="exp">Tgl Kedaluwarsa</label><input id="exp" type="date" required></div>
+      </div>
+      <div class="frow">
+        <div class="f"><label class="lbl" for="qty">Jumlah Masuk</label><input id="qty" type="number" min="1" step="1" required></div>
+        <div class="f"><label class="lbl" for="price">Harga Satuan (Rp)</label><input id="price" type="number" min="0" step="1" required></div>
+      </div>
+      <div class="totalbox"><span>Total Nilai Penerimaan</span><strong id="total">Rp 0</strong></div>
+      <div class="f"><label class="lbl" for="notes">Keterangan / Catatan</label><textarea id="notes" maxlength="300"></textarea></div>
+      <button class="btn wide" id="save" type="submit">Konfirmasi &amp; Simpan Penerimaan Obat</button>
+    </form>
+    <aside class="card fefo" id="fefo" aria-live="polite"></aside>
+  </section>
+
+  <h2 class="pt2">Penerimaan Terakhir</h2>
+  <div class="card tw"><table>
+    <thead><tr><th>Tanggal</th><th>No. PO</th><th>Supplier</th><th>Obat</th><th>Batch</th><th>Jumlah</th><th>Status</th></tr></thead>
+    <tbody id="recent"><tr><td colspan="7" class="empty">Memuat…</td></tr></tbody>
+  </table></div>
+  <section id="receipt" class="card"></section>
+</main>
+<script>
+/* Utilitas bersama semua halaman. Sesuaikan nama peran dengan yang dipakai backend. */
+const ROLE_NAMES = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
+const ROLE_CAN = {
+  stokMasuk: ['gudang', 'kepala_farmasi'],   // SRS 2.3: Staf Gudang & Kepala Farmasi
+  kelolaObat: ['kepala_farmasi']             // master data obat: staf gudang & apoteker tidak boleh mengubah
+};
+const MENU = [['/dashboard','Dashboard'],['/data-obat','Data Obat'],['/stok-masuk','Stok Masuk'],['/stok-keluar','Stok Keluar'],['/monitoring','Monitoring'],['/laporan','Laporan'],['/admin','Pengguna']];
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rp = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+let me = null;
+const can = rule => USE_MOCK || !me || ROLE_CAN[rule].includes(me.role); // hanya kosmetik UI; otorisasi tetap di server
+
+/* ===== DATA CONTOH (dummy) =====
+   Ubah USE_MOCK ke false setelah backend siap. Login/logout/me tetap memakai backend asli.
+   Reset data contoh: jalankan sessionStorage.removeItem('mockDb') di console, lalu muat ulang. */
+const USE_MOCK = true;
+const MOCK = (() => {
+  const CATS = ['Antibiotik', 'Analgesik', 'Antihipertensi', 'Antidiabetes', 'Antasida', 'Analgesik Injeksi', 'Lainnya'];
+  const lvl = x => !x.is_active ? 'nonaktif' : (x.total_stock <= 0 || x.total_stock <= x.min_stock * 0.5) ? 'kritis' : x.total_stock <= x.min_stock ? 'menipis' : 'aman';
+  const seed = () => {
+    const days = { 1: 12, 3: 24, 8: 18, 9: 27, 10: 29 }; // sisa hari batch terdekat (nomor urut obat)
+    const meds = [
+      ['Amoxicillin 500mg','Antibiotik','Kapsul',450,100,10000], ['Paracetamol 500mg','Analgesik','Tablet',1200,200,3000],
+      ['Cefixime 100mg','Antibiotik','Kapsul',85,100,30000], ['Omeprazole 20mg','Antasida','Kapsul',45,50,30000],
+      ['Metformin 500mg','Antidiabetes','Tablet',800,150,2000], ['Amlodipine 10mg','Antihipertensi','Tablet',650,100,3000],
+      ['Ketorolac Inj 30mg','Analgesik Injeksi','Ampul',12,30,35000], ['Paracetamol Syr 60ml','Analgesik','Botol/Sirup',45,20,15000],
+      ['Ranitidine Inj 25mg','Antasida','Ampul',30,20,8000], ['Ceftriaxone Inj 1g','Antibiotik','Vial',12,15,45000],
+      ['Insulin Glargine','Antidiabetes','Vial',2,10,180000], ['Captopril 25mg','Antihipertensi','Tablet',500,100,1500],
+      ['Ibuprofen 400mg','Analgesik','Tablet',900,200,2500], ['Ciprofloxacin 500mg','Antibiotik','Tablet',300,100,6000],
+      ['Simvastatin 20mg','Lainnya','Tablet',400,100,4000], ['Salbutamol 2mg','Lainnya','Tablet',250,80,1200],
+      ['Dexamethasone Inj','Lainnya','Ampul',120,40,7000], ['Antasida Doen','Antasida','Tablet',600,150,800],
+      ['Glimepiride 2mg','Antidiabetes','Tablet',220,100,3500], ['Furosemide 40mg','Lainnya','Tablet',90,100,1000],
+      ['Vitamin B Complex','Lainnya','Strip',150,50,5000]
+    ].map((r, i) => ({ medicine_code: 'OBT-' + String(i + 1).padStart(3, '0'), name: r[0], category: r[1], unit: r[2], total_stock: r[3], min_stock: r[4], price: r[5], is_active: true, days: days[i + 1] }));
+    const ref = 'RSP-' + today().replace(/-/g, '') + '-';
+    const tx = [[30, ref + '089', 'Amoxicillin 500mg', 50, 'Kapsul', 'OUT'], [100, 'PO-0921-014', 'Metformin 500mg', 400, 'Tablet', 'IN'],
+      [190, ref + '081', 'Ketorolac Inj 30mg', 6, 'Ampul', 'OUT'], [300, 'PO-0921-012', 'Omeprazole 20mg', 200, 'Kapsul', 'IN'],
+      [1500, ref + '142', 'Paracetamol 500mg', 120, 'Tablet', 'OUT']
+    ].map(([m, r, n, q, u, t]) => ({ created_at: new Date(Date.now() - m * 6e4).toISOString(), reference_number: r, medicine_name: n, quantity: q, unit: u, type: t }));
+    return { meds, tx };
+  };
+  const addDays = n => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4 + n * 864e5).toISOString().slice(0, 10);
+  const seedBatches = meds => meds.flatMap(m => {            // pecah stok tiap obat menjadi 3 batch dengan Exp berbeda
+    const st = m.total_stock, p1 = Math.round(st / 3), p2 = Math.round(st * 4 / 9), pre = m.name.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase(), d = m.days ?? 90;
+    return [[p1, d, '02'], [p2, d + 60, '05'], [st - p1 - p2, d + 150, '09']].filter(x => x[0] > 0)
+      .map(([q, dd, n]) => ({ medicine_code: m.medicine_code, batch_number: pre + '-' + n, expired_date: addDays(dd), current_qty: q }));
+  });
+  const seedReceipts = () => [[0, 'PT Kimia Farma T&D', 'Metformin 500mg', 'MTF-07', 400, 'Tablet', '014'], [0, 'PT Kalbe Farma', 'Omeprazole 20mg', 'OMP-03', 200, 'Kapsul', '012'],
+    [2, 'PT Anugerah Pharmindo', 'Amlodipine 10mg', 'AML-05', 300, 'Tablet', '009'], [3, 'PT Kimia Farma T&D', 'Ketorolac Inj 30mg', 'KTL-02', 50, 'Ampul', '004']]
+    .map(([ago, supplier, medicine_name, batch_number, quantity, unit, seq]) => { const d = addDays(-ago); return { received_date: d, reference_number: 'PO-' + d.slice(5, 7) + d.slice(8) + '-' + seq, supplier, medicine_name, batch_number, quantity, unit, status: 'Diterima' }; });
+  let DB; try { DB = JSON.parse(sessionStorage.getItem('mockDb')); } catch {}
+  DB = DB || seed();
+  DB.batches = DB.batches || seedBatches(DB.meds); DB.receipts = DB.receipts || seedReceipts();
+  const save = () => { try { sessionStorage.setItem('mockDb', JSON.stringify(DB)); } catch {} };
+
+  return (url, opt = {}) => {                        // mengembalikan undefined bila endpoint tidak di-mock
+    const u = new URL(url, location.origin), p = u.pathname, q = u.searchParams, m = opt.method || 'GET', b = opt.body || {}, meds = DB.meds;
+    if (p === '/api/categories') return CATS.map(name => ({ name }));
+    if (p === '/api/dashboard') {
+      const act = meds.filter(x => x.is_active), low = act.filter(x => x.total_stock <= x.min_stock), near = act.filter(x => x.days < 30).sort((a, b) => a.days - b.days);
+      const share = {}; act.forEach(x => share[x.category] = (share[x.category] || 0) + x.total_stock);
+      const tot = Object.values(share).reduce((a, b) => a + b, 0) || 1, qty = [144, 180, 168, 228, 204, 252], now = new Date();
+      return {
+        totalMedicines: act.length, assetValue: act.reduce((s, x) => s + x.total_stock * x.price, 0), lowStock: low.length, nearExpiry: near.length,
+        monthlyOut: qty.map((v, i) => ({ month: new Date(now.getFullYear(), now.getMonth() - 5 + i, 1).toLocaleDateString('id-ID', { month: 'short' }), qty: v })),
+        alerts: [...near.map(x => ({ name: x.name, kind: 'expiry', level: 'red', detail: `Batch #${x.medicine_code.slice(-3)} | ${x.days} hari lagi` })),
+          ...low.map(x => ({ name: x.name, kind: 'stock', level: 'yellow', detail: `Stok: ${x.total_stock} ${x.unit} | Batas Min: ${x.min_stock}` }))].slice(0, 6),
+        recentTransactions: DB.tx.slice(0, 5),
+        categoryShare: Object.entries(share).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, v]) => ({ name, percent: Math.round(v / tot * 100) }))
+      };
+    }
+    if (p === '/api/medicines' && m === 'GET') {
+      const s = (q.get('search') || '').toLowerCase(), c = q.get('category'), f = q.get('filter'), pg = +q.get('page') || 1, lim = +q.get('limit') || 20;
+      const r = meds.filter(x => (!s || x.name.toLowerCase().includes(s) || x.medicine_code.toLowerCase().includes(s)) && (!c || x.category === c)
+        && (q.get('active') !== '1' || x.is_active) && (!f || (f === 'expiring' ? x.is_active && x.days < 30 : f === 'low' ? ['menipis', 'kritis'].includes(lvl(x)) : lvl(x) === f)));
+      return { data: r.slice((pg - 1) * lim, pg * lim), total: r.length };
+    }
+    if (p === '/api/medicines' && m === 'POST') {
+      if (meds.some(x => x.medicine_code === b.medicine_code)) throw new Error('Kode obat sudah digunakan.');
+      meds.push({ ...b, total_stock: 0, is_active: true }); save(); return {};
+    }
+    const st = p.match(/^\/api\/medicines\/([^/]+)\/status$/);
+    if (st && m === 'PATCH') { const x = meds.find(y => y.medicine_code === decodeURIComponent(st[1])); if (x) x.is_active = !!b.is_active; save(); return {}; }
+    const bt = p.match(/^\/api\/medicines\/([^/]+)\/batches$/);   // antrean batch aktif, urut Exp terdekat (FEFO)
+    if (bt && m === 'GET') return DB.batches.filter(x => x.medicine_code === decodeURIComponent(bt[1]) && x.current_qty > 0).sort((x, y) => x.expired_date.localeCompare(y.expired_date));
+    if (p === '/api/stock/receipts' && m === 'GET') return DB.receipts.slice(0, +q.get('limit') || 5);
+    if (p === '/api/stock/in' && m === 'POST') {
+      for (const it of b.items) {
+        const x = meds.find(y => y.medicine_code === it.medicine_code); if (!x) throw new Error('Obat tidak ditemukan: ' + it.medicine_code);
+        if (DB.batches.some(y => y.medicine_code === x.medicine_code && y.batch_number.toLowerCase() === it.batch_number.toLowerCase())) throw new Error(`Nomor batch ${it.batch_number} sudah ada untuk obat ini.`);
+        if (!(it.expired_date > today())) throw new Error('Tanggal kedaluwarsa harus setelah hari ini.');
+        x.total_stock += it.quantity; DB.batches.push({ medicine_code: x.medicine_code, batch_number: it.batch_number, expired_date: it.expired_date, current_qty: it.quantity });
+        DB.tx.unshift({ created_at: new Date().toISOString(), reference_number: b.reference_number, medicine_name: x.name, quantity: it.quantity, unit: x.unit, type: 'IN' });
+        DB.receipts.unshift({ received_date: b.received_date || today(), reference_number: b.reference_number, supplier: b.supplier, medicine_name: x.name, batch_number: it.batch_number, quantity: it.quantity, unit: x.unit, status: 'Diterima' });
+      }
+      save(); return { received_at: new Date().toISOString() };
+    }
+  };
+})();
+
+async function api(url, opt = {}) {
+  if (USE_MOCK) { await new Promise(r => setTimeout(r, 200)); const d = MOCK(url, opt); if (d !== undefined) return d; }
+  const r = await fetch(url, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, ...opt, body: opt.body ? JSON.stringify(opt.body) : undefined });
+  if (r.status === 401) { location.assign('/login'); throw new Error('Sesi berakhir. Silakan masuk lagi.'); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.success === false) throw new Error(j.message || 'Permintaan gagal. Coba lagi.');
+  return j.data;
+}
+function flash(el, msg, ok) { el.textContent = msg; el.className = 'alert show' + (ok ? ' ok' : ''); }
+
+async function boot(active) {
+  const page = esc(document.title.split('– ')[1] || '');
+  document.body.insertAdjacentHTML('afterbegin',
+    `<header class="top"><span></span><h1>Sistem Inventaris Stok Obat RS - ${page}</h1><div class="account"><small id="identity">Memuat sesi...</small><nav aria-label="Navigasi akun"><a href="/dashboard">Dashboard</a><a href="/account/password">Ganti Kata Sandi</a><button id="logout">Logout</button></nav></div></header>` +
+    `<aside class="side" aria-label="Menu utama"><div class="brand">RS INVENTARIS</div>` +
+    MENU.map(([h, t]) => `<a href="${h}" class="${h === active ? 'on' : ''}"${h === '/admin' ? ' id="menuAdmin" hidden' : ''}>${t}</a>`).join('') + `</aside>`);
+  $('logout').onclick = async () => { $('logout').disabled = true; try { await api('/api/auth/logout', { method: 'POST', body: {} }); } catch {} location.assign('/login'); };
+  try { me = (await api('/api/auth/me')).user; } catch { me = null; }   // respons: { data: { user } }
+  $('identity').textContent = me ? `${me.username} | ${ROLE_NAMES[me.role] || me.role}` : '';
+  $('menuAdmin').hidden = !!me && me.role !== 'admin';                // menu Pengguna hanya untuk Administrator IT
+  document.querySelectorAll('[data-need]').forEach(e => { if (!can(e.dataset.need)) e.hidden = true; });
+}
+</script>
+<script>
+let meds = [], batches = [];
+const fmtD = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-') : '–';
+const medOf = c => meds.find(m => m.medicine_code === c);
+const COLORS = ['var(--red)', 'var(--blue)', '#2f9a55', '#6b7690'];
+const recalc = () => { $('total').textContent = rp((+$('qty').value || 0) * (+$('price').value || 0)); };
+
+function renderFefo() {
+  const m = medOf($('med').value), box = $('fefo');
+  if (!m) { box.innerHTML = '<h3>Antrean Batch (FEFO)</h3><p class="sub">Pilih obat untuk melihat batch yang sedang aktif.</p>'; return; }
+  const u = esc(m.unit.toLowerCase()), bn = $('batch').value.trim(), ex = $('exp').value, q = +$('qty').value;
+  box.innerHTML = `<h3>Antrean Batch (FEFO)</h3><p class="sub">${esc(m.name)}</p><p style="font-size:12px;font-weight:700;margin:12px 0 6px">Batch aktif saat ini:</p>` +
+    (batches.length ? batches.map((b, i) => `<div class="qb"><b style="color:${COLORS[Math.min(i, 3)]}">${i + 1}. Batch #${esc(b.batch_number)}</b><small>Exp: ${fmtD(b.expired_date)} | Sisa: ${Number(b.current_qty).toLocaleString('id-ID')} ${u}</small></div>`).join('') : '<p class="sub">Belum ada batch aktif untuk obat ini.</p>') +
+    (bn || ex || q ? `<div class="newb"><b>+ Batch baru (akan ditambahkan)</b><br>Batch #${esc(bn || '–')} | Exp: ${esc(ex || '–')} | +${q > 0 ? q.toLocaleString('id-ID') : 0} ${u}</div>` : '') +
+    '<p class="sub" style="margin-top:12px">Batch baru otomatis diurutkan berdasarkan tanggal kedaluwarsa. Pengeluaran obat selalu mengambil batch dengan Exp terdekat lebih dulu.</p>';
+}
+async function loadRecent() {
+  try {
+    const r = await api('/api/stock/receipts?limit=5');
+    $('recent').innerHTML = r.length ? r.map(x => `<tr><td class="mut">${fmtD(x.received_date)}</td><td class="mut">${esc(x.reference_number)}</td><td>${esc(x.supplier)}</td><td><strong>${esc(x.medicine_name)}</strong></td><td class="mut">${esc(x.batch_number)}</td><td class="q">${Number(x.quantity).toLocaleString('id-ID')} ${esc(x.unit)}</td><td><span class="badge green">${esc(x.status || 'Diterima')}</span></td></tr>`).join('') : '<tr><td colspan="7" class="empty">Belum ada penerimaan.</td></tr>';
+    $('sup').innerHTML = [...new Set(r.map(x => x.supplier))].map(v => `<option value="${esc(v)}">`).join('');
+  } catch (e) { flash($('msg'), e.message); }
+}
+async function loadBatches() {
+  const code = $('med').value; batches = []; renderFefo(); if (!code) return;
+  try { const b = await api(`/api/medicines/${encodeURIComponent(code)}/batches`); if (code === $('med').value) batches = b; }
+  catch (e) { flash($('msg'), e.message); }
+  renderFefo();
+}
+function fillReceipt(r) {   // bukti penerimaan yang dicetak (hanya tampil saat print)
+  const rows = [['No. PO / Faktur', r.ref], ['Tanggal terima', fmtD(r.date)], ['Supplier', r.supplier], ['Obat', `${r.m.medicine_code} | ${r.m.name}`], ['No. batch', r.it.batch_number],
+    ['Tgl kedaluwarsa', fmtD(r.it.expired_date)], ['Jumlah', `${r.it.quantity.toLocaleString('id-ID')} ${r.m.unit}`], ['Harga satuan', rp(r.it.unit_price)],
+    ['Total nilai', rp(r.it.quantity * r.it.unit_price)], ['Keterangan', r.notes || '-'], ['Diterima oleh', me?.username || '-']];
+  $('receipt').innerHTML = '<h2>Bukti Penerimaan Barang</h2><table><tbody>' + rows.map(([k, v]) => `<tr><th>${k}</th><td>${esc(v)}</td></tr>`).join('') + '</tbody></table>';
+}
+
+$('med').onchange = loadBatches;
+for (const id of ['batch', 'exp', 'qty', 'price']) $(id).oninput = () => { recalc(); renderFefo(); };
+$('print').onclick = () => window.print();
+
+$('frm').onsubmit = async e => {
+  e.preventDefault(); $('ok').className = 'alert ok'; $('msg').className = 'alert';
+  const m = medOf($('med').value), ref = $('ref').value.trim(), supplier = $('supplier').value.trim(), date = $('recv').value, notes = $('notes').value.trim();
+  const it = { medicine_code: $('med').value, batch_number: $('batch').value.trim(), expired_date: $('exp').value, quantity: +$('qty').value, unit_price: $('price').value };
+  if (!ref || !supplier || !m || !it.batch_number || !it.expired_date || it.unit_price === '') return flash($('msg'), 'No. PO/faktur, supplier, obat, nomor batch, tanggal kedaluwarsa, dan harga satuan wajib diisi.');
+  if (!date || date > today()) return flash($('msg'), 'Tanggal terima wajib diisi dan tidak boleh di masa depan.');
+  if (!(it.expired_date > today())) return flash($('msg'), 'Tanggal kedaluwarsa harus setelah hari ini.');
+  if (!Number.isInteger(it.quantity) || it.quantity < 1) return flash($('msg'), 'Jumlah masuk harus bilangan bulat minimal 1.');
+  if (+it.unit_price < 0) return flash($('msg'), 'Harga satuan tidak boleh negatif.');
+  if (batches.some(b => b.batch_number.toLowerCase() === it.batch_number.toLowerCase())) return flash($('msg'), `Nomor batch ${it.batch_number} sudah ada untuk obat ini.`);
+  it.unit_price = +it.unit_price; $('save').disabled = true;
+  try {
+    await api('/api/stock/in', { method: 'POST', body: { reference_number: ref, received_date: date, supplier, notes, items: [it] } });
+    fillReceipt({ ref, date, supplier, notes, m, it });
+    $('okText').textContent = `Penerimaan ${ref} tersimpan: +${it.quantity.toLocaleString('id-ID')} ${m.unit} ${m.name} (batch ${it.batch_number}).`; $('ok').className = 'alert ok show';
+    $('frm').reset(); $('recv').value = today(); recalc(); loadBatches(); loadRecent();
+  } catch (err) { flash($('msg'), err.message); }
+  finally { $('save').disabled = false; }
+};
+
+(async () => {
+  await boot('/stok-masuk');
+  if (!can('stokMasuk')) { $('cols').hidden = true; return flash($('msg'), 'Peran Anda tidak memiliki akses untuk mencatat stok masuk.'); }
+  $('recv').value = today(); $('recv').max = today();
+  $('exp').min = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4 + 864e5).toISOString().slice(0, 10);
+  try { meds = (await api('/api/medicines?active=1&limit=500')).data; } catch (e) { flash($('msg'), e.message); }
+  $('med').innerHTML = '<option value="">Pilih obat</option>' + meds.map(m => `<option value="${esc(m.medicine_code)}">${esc(m.medicine_code)} | ${esc(m.name)} ${esc(m.unit)}</option>`).join('');
+  recalc(); renderFefo(); loadRecent();
+})();
+</script>
+</body>
+</html>
