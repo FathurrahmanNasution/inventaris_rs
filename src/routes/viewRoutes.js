@@ -49,6 +49,10 @@ router.get('/login', serveView('login.html', 'Halaman Login'));
 router.get('/dashboard', authenticateToken, serveView('dashboard.html', 'Halaman Dashboard'));
 router.get('/account/password', authenticateToken, serveView('password.html', 'Ganti Kata Sandi'));
 
+router.get('/data-obat', authenticateToken, serveView('data-obat.html', 'Data Obat'));
+router.get('/stok-masuk', authenticateToken, requireRole('gudang', 'kepala_farmasi'),
+  serveView('stok-masuk.html', 'Stok Masuk'));
+
 // 5. Admin Page (Placeholder handover untuk tim frontend admin)
 router.get(['/admin', '/admin/users'], authenticateToken, requireRole('admin'), serveView('admin.html', 'Halaman Admin'));
 
