@@ -54,6 +54,37 @@ try:
         expect(page.locator('#usersBody tr')).to_have_count(4)
         page.locator('#prevUsers').click()
 
+        # A slow Edit response must never replace a newer Add Account draft.
+        page.locator('#userSearch').fill('ui_gudang')
+        stale_pattern = '**/api/users/2'
+        for status in [200, 404]:
+            held = []
+            page.route(stale_pattern, lambda route: held.append(route))
+            edit_button = page.locator('#usersBody tr button.secondary')
+            edit_button.click()
+            expect(edit_button).to_have_text('Memuat...')
+            expect(edit_button).to_be_disabled()
+            page.locator('#addUser').click()
+            page.locator('#username').fill('ui_draft_preserved')
+            page.locator('#password').fill('DraftUi123!')
+            page.locator('#confirmPassword').fill('DraftUi123!')
+            payload = context.request.get(origin + '/api/users/2').json() if status == 200 else {
+                'success': False, 'message': 'Stale detail failure'
+            }
+            assert len(held) == 1
+            with page.expect_response(stale_pattern):
+                held[0].fulfill(status=status, json=payload)
+            expect(edit_button).to_have_text('Edit')
+            expect(page.locator('#formTitle')).to_have_text('Tambah Pengguna')
+            expect(page.locator('#username')).to_have_value('ui_draft_preserved')
+            expect(page.locator('#password')).to_have_value('DraftUi123!')
+            expect(page.locator('#confirmPassword')).to_have_value('DraftUi123!')
+            expect(page.locator('#initialPasswordFields')).to_be_visible()
+            expect(page.locator('#message')).not_to_contain_text('Stale detail failure')
+            page.locator('[data-close="userDialog"]').click()
+            page.unroute(stale_pattern)
+        page.locator('#userSearch').fill('')
+
         # Preserve and exercise the existing Add Account card/form, including errors.
         page.locator('#addUser').click()
         expect(page.locator('#formTitle')).to_have_text('Tambah Pengguna')
@@ -177,7 +208,7 @@ try:
         target_context.close()
         context.close()
         browser.close()
-    print('PASS: Admin login/logout, list/filter/pagination, untouched Add Account, fresh details, edit roles/status, reset/change password, audit search/pagination, validation/error states, self protection; no page errors.')
+    print('PASS: Admin stale Edit success/error preserves Add Account drafts, fresh Edit data, Add Account validation, login/logout, list/filter/pagination, roles/status, passwords, audit, self protection; no page errors.')
 finally:
     if server.poll() is None:
         server.stdin.write('stop\n')
