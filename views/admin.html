@@ -110,15 +110,15 @@
         <div class="brand">RS INVENTARIS</div>
         <a href="/dashboard">Dashboard</a>
         <a href="/data-obat">Data Obat</a>
-        <a href="/stok-masuk">Stok Masuk</a>
-        <a href="/stok-keluar">Stok Keluar</a>
+        <a href="/stok-masuk" hidden>Stok Masuk</a>
+        <a href="/stok-keluar" hidden>Stok Keluar</a>
         <a href="/monitoring">Monitoring</a>
         <a href="/laporan">Laporan</a>
         <a href="#" class="active" aria-current="page">Pengguna</a>
       </aside>
       <main>
         <h2 class="page-title">Manajemen Akun Pengguna &amp; Role-Based Access Control</h2>
-        <p>Kelola akun staf, hak akses, dan aktivitas pengguna.</p>
+        <p>Kelola akun staf, hak akses, dan aktivitas pengguna. Administrator IT tidak melakukan transaksi stok fisik.</p>
         <div id="message" class="message" role="status" aria-live="polite" hidden></div>
         <section class="card" aria-labelledby="usersTitle">
           <div class="toolbar"><div><h2 id="usersTitle">Akun pengguna</h2><p class="muted" id="userCount">Memuat pengguna...</p></div><button id="addUser" disabled>+ Tambah Pengguna</button></div>
@@ -130,13 +130,14 @@
             </div>
             <button id="reloadUsers" class="secondary">Muat Ulang</button>
           </div>
+          <p class="muted" id="userHelp">Edit memuat detail terbaru untuk memperbarui username, peran, dan status akun. Akun nonaktif tidak dapat login atau memakai sesi lama. Peran dan status akun sendiri dilindungi agar akses Administrator IT tetap tersedia.</p>
           <div class="table-wrap"><table><thead><tr><th>Username</th><th>Peran</th><th>Status</th><th>Dibuat</th><th>Tindakan</th></tr></thead><tbody id="usersBody"><tr><td colspan="5">Memuat...</td></tr></tbody></table></div>
           <div class="pagination"><button id="prevUsers" class="secondary" disabled>Sebelumnya</button><span id="userPage" aria-live="polite">Halaman 1</span><button id="nextUsers" class="secondary" disabled>Berikutnya</button></div>
         </section>
         <section class="card" aria-labelledby="logsTitle">
           <div class="toolbar"><h2 id="logsTitle">Log aktivitas</h2><span class="muted">50 aktivitas per halaman</span></div>
           <form id="logFilter" class="filters"><div><label for="logSearch">Cari pengguna, aktivitas, atau IP</label><input id="logSearch" type="search" maxlength="100" placeholder="Contoh: reset_password"></div><button type="submit">Tampilkan Log</button></form>
-          <p class="muted">Waktu ditampilkan sesuai waktu lokal browser.</p>
+          <p class="muted">Telusuri perubahan akun, peran, status, reset kata sandi, dan aktivitas login/logout berdasarkan pengguna, aktivitas, atau IP. Log hanya dapat dibaca dan ditampilkan 50 baris per halaman. Waktu ditampilkan sesuai waktu lokal browser.</p>
           <div id="logError" class="message error" role="alert" hidden></div>
           <div class="table-wrap"><table><thead><tr><th>Waktu</th><th>Pengguna</th><th>Aktivitas</th><th>Alamat IP</th></tr></thead><tbody id="logsBody"><tr><td colspan="4">Memuat...</td></tr></tbody></table></div>
           <div class="pagination"><button id="prevLogs" class="secondary" disabled>Sebelumnya</button><span id="logPage">Halaman 1</span><button id="nextLogs" class="secondary" disabled>Berikutnya</button></div>
@@ -208,7 +209,14 @@
         const badge = document.createElement('span'); badge.className = 'badge' + (user.status === 'aktif' ? '' : ' inactive'); badge.textContent = user.status === 'aktif' ? 'Aktif' : 'Nonaktif';
         cell(row, '').append(badge); cell(row, time(user.created_at));
         const actions = cell(row, '', 'actions');
-        const edit = document.createElement('button'); edit.textContent = 'Edit'; edit.className = 'secondary'; edit.addEventListener('click', () => openUser(user)); actions.append(edit);
+        const edit = document.createElement('button'); edit.textContent = 'Edit'; edit.className = 'secondary';
+        edit.addEventListener('click', async () => {
+          edit.disabled = true; edit.textContent = 'Memuat...';
+          try { openUser((await api('/api/users/' + user.user_id)).data.user); }
+          catch (error) { message(error.message, true); }
+          finally { edit.disabled = false; edit.textContent = 'Edit'; }
+        });
+        actions.append(edit);
         if (user.user_id !== currentUser.user_id) {
           const reset = document.createElement('button'); reset.textContent = 'Reset Sandi'; reset.className = 'danger';
           reset.addEventListener('click', () => { resetId = user.user_id; $('resetForm').reset(); $('resetError').hidden = true; $('resetTarget').textContent = 'Pengguna: ' + user.username; $('resetDialog').showModal(); });

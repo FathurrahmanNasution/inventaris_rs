@@ -3,6 +3,7 @@ const controller = require('../controllers/userController');
 const { authenticateToken, requireRole } = require('../middlewares/authMiddleware');
 router.use(authenticateToken, requireRole('admin'));
 router.get('/', controller.listUsers);
+router.get('/:userId', controller.getUserDetails);
 router.post('/', controller.createUser);
 router.patch('/:userId', controller.updateUser);
 router.post('/:userId/reset-password', controller.resetPassword);

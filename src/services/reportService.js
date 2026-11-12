@@ -19,7 +19,7 @@ function validId(value) {
 }
 function validDate(value, label) {
   if (value === undefined || value === null || value === '') return null;
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(Date.parse(value)))
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || value < '0001-01-01' || Number.isNaN(Date.parse(value)) || new Date(value).toISOString().slice(0, 10) !== value)
     fail('Format ' + label + ' harus YYYY-MM-DD.');
   return value;
 }
@@ -75,21 +75,23 @@ async function getStockCard({ medicineCode, from, to } = {}) {
   const code = medicineCode.trim();
   const dateFrom = validDate(from, 'tanggal awal');
   const dateTo = validDate(to, 'tanggal akhir');
+  if (dateFrom && dateTo && dateFrom > dateTo) fail('Tanggal awal tidak boleh setelah tanggal akhir.');
   const medicine = (await query('SELECT medicine_code, name, unit FROM medicines WHERE medicine_code = $1', [code])).rows[0];
   if (!medicine) fail('Obat tidak ditemukan.', 404);
 
   const result = await query(
     'SELECT t.transaction_id, t.batch_number, t.transaction_type, t.quantity, ' +
-    't.transaction_date, t.reference_number, t.created_at, u.username ' +
+    't.transaction_date::text AS transaction_date, t.reference_number, t.created_at, u.username ' +
     'FROM stock_transactions t LEFT JOIN users u ON u.user_id = t.user_id ' +
     'WHERE t.medicine_code = $1 ' +
     'AND ($2::date IS NULL OR t.transaction_date >= $2::date) ' +
     'AND ($3::date IS NULL OR t.transaction_date <= $3::date) ' +
     'ORDER BY t.transaction_date ASC, t.transaction_id ASC',
-    [code, dateFrom, dateTo]);
+    // Include earlier mutations when calculating the opening balance of a period.
+    [code, null, dateTo]);
 
   let balance = 0;
-  const rows = result.rows.map(tx => {
+  const allRows = result.rows.map(tx => {
     const qty = Number(tx.quantity);
     // IN menambah, OUT mengurangi, ADJUSTMENT memakai nilai bertanda (signed).
     const change = tx.transaction_type === 'IN' ? qty : tx.transaction_type === 'OUT' ? -qty : qty;
@@ -103,10 +105,11 @@ async function getStockCard({ medicineCode, from, to } = {}) {
       by: tx.username || null
     };
   });
+  const rows = allRows.filter(tx => !dateFrom || String(tx.transaction_date).slice(0, 10) >= dateFrom);
   return {
     medicine: { medicine_code: medicine.medicine_code, name: medicine.name, unit: medicine.unit },
     period: { from: dateFrom, to: dateTo },
-    entries: rows, final_balance: balance
+    entries: rows, opening_balance: rows[0]?.opening_balance ?? balance, final_balance: balance
   };
 }
 

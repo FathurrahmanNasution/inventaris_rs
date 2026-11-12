@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:stock": "node --test tests/stock.postgres.test.js",
+    "test:admin": "node --test tests/admin.test.js tests/admin.postgres.test.js"
   },
   "keywords": [],
   "type": "commonjs",
