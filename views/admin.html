@@ -173,6 +173,7 @@
     const roleNames = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
     let users = [], currentUser, editing = null, resetId, logPage = 1, logSearch = '', logsBusy = false;
     let userPage = 1;
+    let dialogVersion = 0;
     const USERS_PER_PAGE = 20;
     function message(text, error = false, id = 'message') {
       $(id).textContent = text; $(id).className = 'message' + (error ? ' error' : ''); $(id).hidden = false;
@@ -211,15 +212,18 @@
         const actions = cell(row, '', 'actions');
         const edit = document.createElement('button'); edit.textContent = 'Edit'; edit.className = 'secondary';
         edit.addEventListener('click', async () => {
+          const version = ++dialogVersion;
           edit.disabled = true; edit.textContent = 'Memuat...';
-          try { openUser((await api('/api/users/' + user.user_id)).data.user); }
-          catch (error) { message(error.message, true); }
+          try {
+            const result = await api('/api/users/' + user.user_id);
+            if (version === dialogVersion) openUser(result.data.user);
+          } catch (error) { if (version === dialogVersion) message(error.message, true); }
           finally { edit.disabled = false; edit.textContent = 'Edit'; }
         });
         actions.append(edit);
         if (user.user_id !== currentUser.user_id) {
           const reset = document.createElement('button'); reset.textContent = 'Reset Sandi'; reset.className = 'danger';
-          reset.addEventListener('click', () => { resetId = user.user_id; $('resetForm').reset(); $('resetError').hidden = true; $('resetTarget').textContent = 'Pengguna: ' + user.username; $('resetDialog').showModal(); });
+          reset.addEventListener('click', () => { dialogVersion++; resetId = user.user_id; $('resetForm').reset(); $('resetError').hidden = true; $('resetTarget').textContent = 'Pengguna: ' + user.username; $('resetDialog').showModal(); });
           actions.append(reset);
         }
         $('usersBody').append(row);
@@ -249,6 +253,7 @@
       finally { logsBusy = false; }
     }
     function openUser(user = null) {
+      dialogVersion++;
       editing = user; $('userForm').reset(); $('formError').hidden = true;
       $('formTitle').textContent = user ? 'Edit Pengguna' : 'Tambah Pengguna';
       $('username').value = user?.username || ''; $('role').value = user?.role || 'pelayanan'; $('status').value = user?.status || 'aktif';
@@ -288,7 +293,7 @@
       finally { $('saveReset').disabled = false; }
     });
     for (const id of ['userDialog', 'resetDialog']) {
-      $(id).addEventListener('close', () => $(id).querySelector('form').reset());
+      $(id).addEventListener('close', () => { dialogVersion++; $(id).querySelector('form').reset(); });
       $(id).addEventListener('cancel', event => { if ($('saveUser').disabled || $('saveReset').disabled) event.preventDefault(); });
     }
     document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => {

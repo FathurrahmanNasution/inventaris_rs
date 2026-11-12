@@ -130,7 +130,7 @@
     const roleNames = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
     const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
-    let drugs = [];
+    let drugs = [], batchesLoading = false, batchesReady = false, batchRequest = 0, submitting = false;
 
     function fmtDate(iso) { const [y, m, d] = iso.split('-'); return d + '-' + MONTHS[+m - 1] + '-' + y; }
     function message(text, error = false) { const el = $('message'); el.textContent = text; el.className = 'message' + (error ? ' error' : ''); el.hidden = false; }
@@ -142,9 +142,14 @@
     }
     function renderBatches() {
       const drug = currentDrug(), list = $('batchList');
+      const qty = Number($('qty').value), batches = drug ? sortedBatches(drug) : [];
+      const total = batches.reduce((sum, batch) => sum + batch.stock, 0);
+      $('saveOut').disabled = submitting || batchesLoading || !batchesReady || !drug || !Number.isInteger(qty) || qty < 1 || qty > total;
       list.replaceChildren();
       if (!drug) { $('batchAuto').value = ''; const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'Pilih obat untuk melihat batch aktif.'; list.append(p); return; }
-      const batches = sortedBatches(drug);
+      if (batchesLoading) { $('batchAuto').value = 'Memuat ketersediaan batch...'; list.textContent = 'Memuat ketersediaan batch...'; return; }
+      if (!batchesReady) { $('batchAuto').value = ''; list.textContent = 'Ketersediaan batch belum dimuat. Pilih ulang obat untuk mencoba lagi.'; return; }
+      if (qty > total) message('Stok tidak mencukupi. Tersedia: ' + total + ' ' + drug.unit + '.', true);
       if (!batches.length) { $('batchAuto').value = 'Tidak ada stok tersedia'; list.textContent = 'Tidak ada batch aktif.'; return; }
       let remaining = Math.max(0, Number($('qty').value) || 0);
       const allocation = [];
@@ -160,17 +165,23 @@
     }
 
     async function loadBatches() {
-      const drug = currentDrug();
-      if (!drug) return renderBatches();
-      drug.batches = []; renderBatches();
+      const request = ++batchRequest, drug = currentDrug();
+      batchesReady = false; batchesLoading = !!drug;
+      if (drug) drug.batches = [];
+      renderBatches();
+      if (!drug) return;
       try {
         const result = await api('/api/stock/medicines/' + encodeURIComponent(drug.id) + '/batches');
+        if (request !== batchRequest || drug !== currentDrug()) return;
         drug.batches = result.data.map(b => ({ code: b.batch_number, exp: b.expired_date, stock: Number(b.current_qty) }));
-        if (drug === currentDrug()) renderBatches();
-      } catch (error) { message(error.message, true); }
+        batchesReady = true;
+      } catch (error) { if (request === batchRequest && drug === currentDrug()) message(error.message, true); }
+      finally {
+        if (request === batchRequest && drug === currentDrug()) { batchesLoading = false; renderBatches(); }
+      }
     }
     $('drug').addEventListener('change', () => { $('message').hidden = true; loadBatches(); });
-    $('qty').addEventListener('input', renderBatches);
+    $('qty').addEventListener('input', () => { $('message').hidden = true; renderBatches(); });
 
     function renderReceipt(receipt) {
       let box = $('receipt');
@@ -188,19 +199,35 @@
 
     $('outForm').addEventListener('submit', async event => {
       event.preventDefault();
+      if (submitting) return;
       const drug = currentDrug(), qty = Number($('qty').value);
-      if (!$('refNo').value.trim() || !$('unit').value.trim()) return message('No. referensi dan unit tujuan wajib diisi.', true);
+      const reference = $('refNo').value.trim(), destination = $('unit').value.trim(), notes = $('note').value.trim();
+      if (!reference || !destination) return message('No. referensi dan unit tujuan wajib diisi.', true);
       if (!drug) return message('Pilih obat terlebih dahulu.', true);
       if (!Number.isInteger(qty) || qty < 1) return message('Jumlah keluar harus berupa bilangan bulat minimal 1.', true);
-      $('saveOut').disabled = true;
+      if (batchesLoading || !batchesReady) return message('Tunggu sampai ketersediaan batch selesai dimuat.', true);
+      const batches = sortedBatches(drug), total = batches.reduce((sum, batch) => sum + batch.stock, 0);
+      if (qty > total) { renderBatches(); return; }
+      let remaining = qty;
+      const allocation = [];
+      for (const batch of batches) {
+        const take = Math.min(remaining, batch.stock);
+        if (take > 0) allocation.push(batch.code + ': ' + take + ' ' + drug.unit + ' (Exp: ' + fmtDate(batch.exp) + ')');
+        remaining -= take;
+        if (!remaining) break;
+      }
+      submitting = true; renderBatches();
       try {
-        const result = await api('/api/stock/out', 'POST', { reference_number: $('refNo').value.trim(), destination: $('unit').value.trim(),
-          medicine_code: drug.id, quantity: qty, notes: $('note').value.trim() });
+        if (!confirm('Simpan pengeluaran obat?\nObat: ' + drug.name + '\nJumlah: ' + qty + ' ' + drug.unit +
+          '\nNo. resep/referensi: ' + reference + '\nAlokasi FEFO (server akan memvalidasi ulang):\n' + allocation.join('\n'))) return;
+        const result = await api('/api/stock/out', 'POST', { reference_number: reference, destination,
+          medicine_code: drug.id, quantity: qty, notes });
         renderReceipt(result.data);
         message('Pengeluaran tersimpan: ' + qty + ' ' + drug.unit + ' dari ' + result.data.items.length + ' batch sesuai FEFO.');
-        $('outForm').reset(); renderBatches();
+        $('qty').value = ''; $('note').value = '';
+        await loadBatches();
       } catch (error) { message(error.message, true); await loadBatches(); }
-      finally { $('saveOut').disabled = false; }
+      finally { submitting = false; renderBatches(); }
     });
 
     async function api(url, method = 'GET', body) {
@@ -226,7 +253,7 @@
         $('navUsers').hidden = user.role !== 'admin'; // Manajemen Pengguna hanya untuk Admin
         if (!['pelayanan', 'kepala_farmasi'].includes(user.role)) return message('Peran Anda tidak diizinkan mencatat pengeluaran.', true);
         drugs = (await api('/api/stock/medicines?limit=500')).data.data.map(m => ({ id: m.medicine_code, name: m.name, unit: m.unit, batches: [] }));
-        renderDrugOptions(); renderBatches(); $('saveOut').disabled = false;
+        renderDrugOptions(); renderBatches();
       } catch (error) { message(error.message, true); }
     })();
   </script>
