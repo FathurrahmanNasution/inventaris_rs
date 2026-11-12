@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 const { authenticateToken, requireRole } = require('../middlewares/authMiddleware');
+const { ROLES: STOCK_ROLES } = require('../services/stockService');
 
 const serveView = (fileName, fallbackTitle) => (req, res) => {
   const filePath = path.join(__dirname, '../../views', fileName);
@@ -50,14 +51,14 @@ router.get('/dashboard', authenticateToken, serveView('dashboard.html', 'Halaman
 router.get('/account/password', authenticateToken, serveView('password.html', 'Ganti Kata Sandi'));
 
 router.get('/data-obat', authenticateToken, serveView('data-obat.html', 'Data Obat'));
-router.get('/stok-masuk', authenticateToken, requireRole('gudang', 'kepala_farmasi'),
+router.get('/stok-masuk', authenticateToken, requireRole(...STOCK_ROLES.IN),
   serveView('stok-masuk.html', 'Stok Masuk'));
 
 // 5. Admin Page (Placeholder handover untuk tim frontend admin)
 router.get(['/admin', '/admin/users'], authenticateToken, requireRole('admin'), serveView('admin.html', 'Halaman Admin'));
 
 // Pengeluaran fisik: apoteker pelayanan dan Kepala Farmasi (SRS 2.3).
-router.get('/stok-keluar', authenticateToken, requireRole('pelayanan', 'kepala_farmasi'), serveView('stok-keluar.html', 'Stok Keluar'));
+router.get('/stok-keluar', authenticateToken, requireRole(...STOCK_ROLES.OUT), serveView('stok-keluar.html', 'Stok Keluar'));
 
 router.get('/monitoring', authenticateToken, serveView('monitoring.html', 'Monitoring'));
 
