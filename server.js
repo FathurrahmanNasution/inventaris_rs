@@ -9,6 +9,7 @@ const userRoutes = require('./src/routes/userRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const db = require('./src/config/db');
 
 // Middleware global
 app.disable('x-powered-by');
@@ -44,11 +45,31 @@ app.use((err, req, res, next) => {
   });
 });
 
-if (require.main === module) app.listen(PORT, () => {
-  console.log(`=======================================================`);
-  console.log(`Server Backend aktif di http://localhost:${PORT}`);
-  console.log(`Menghubungkan ke Neon Cloud PostgreSQL...`);
-  console.log(`=======================================================`);
-});
+async function start() {
+  const started = Date.now();
+  console.log('Menghubungkan ke Neon Cloud PostgreSQL... (timeout koneksi 10s, query 15s)');
+  try {
+    // Reuse the pool; scope the read timeout to readiness so stock transaction
+    // clients keep their existing commit/rollback behavior.
+    await db.query({ text: 'SELECT 1', query_timeout: 15000 });
+    console.log(`[Database] Siap: SELECT 1 berhasil (${Date.now() - started} ms).`);
+    return await new Promise((resolve, reject) => {
+      const server = app.listen(PORT, () => {
+        console.log(`Server Backend aktif di http://localhost:${server.address().port}`);
+        resolve(server);
+      });
+      server.once('error', reject);
+    });
+  } catch (error) {
+    const code = error.code || error.cause?.code ||
+      (/timeout|timed out/i.test(error.message) ? 'DB_TIMEOUT' : 'STARTUP_FAILED');
+    console.error(`[Startup Error] ${code}: backend gagal dimulai setelah ${Date.now() - started} ms.`);
+    await db.pool.end();
+    throw error;
+  }
+}
+
+if (require.main === module) start().catch(() => { process.exitCode = 1; });
 
 module.exports = app;
+module.exports.start = start;

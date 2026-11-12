@@ -1,4 +1,5 @@
 const { verifyJwtToken, getSessionUser } = require('../services/authService');
+const path = require('path');
 async function authenticateToken(req, res, next) {
   const header = req.get('authorization');
   const token = header?.startsWith('Bearer ') ? header.slice(7) : req.cookies?.token;
@@ -13,9 +14,12 @@ async function authenticateToken(req, res, next) {
 }
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
-    if (!req.user || !allowedRoles.includes(req.user.role))
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      if (req.method === 'GET' && /^\/stok-(masuk|keluar)\/?$/.test(req.path) && req.accepts(['html', 'json']) === 'html')
+        return res.status(403).sendFile(path.join(__dirname, '../../views/forbidden.html'));
       return res.status(403).json({ success: false, message: allowedRoles.length === 1 && allowedRoles[0] === 'admin'
         ? 'Akses khusus Administrator IT.' : 'Peran Anda tidak diizinkan mengakses fitur ini.' });
+    }
     next();
   };
 }

@@ -19,6 +19,14 @@ Server aktif di: **`http://localhost:3000`**
 
 *(Koneksi basis data sudah terhubung langsung ke Neon Cloud PostgreSQL melalui file `.env`)*.
 
+Startup menjalankan `SELECT 1` melalui pool existing sebelum HTTP server menerima
+request. Terminal menampilkan durasi pemeriksaan database, kemudian alamat server
+jika berhasil. Timeout koneksi/akuisisi pool adalah 10 detik dan timeout respons
+query pemeriksaan startup 15 detik; koneksi idle dilepas setelah 30 detik, dengan
+maksimum 10 koneksi. Timeout query ini tidak diterapkan pada transaksi stok.
+Kegagalan startup menampilkan kode error tanpa kredensial, menutup pool, dan keluar
+dengan kode 1. Pemeriksaan ini tidak menjalankan migrasi atau memvalidasi skema stok.
+
 ---
 
 ## 🔑 Kredensial Akun untuk Pengujian (Login)

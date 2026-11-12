@@ -5,10 +5,20 @@ const router = express.Router();
 const { authenticateToken, requireRole } = require('../middlewares/authMiddleware');
 const { ROLES: STOCK_ROLES } = require('../services/stockService');
 
-const serveView = (fileName, fallbackTitle) => (req, res) => {
+const serveView = (fileName, fallbackTitle) => (req, res, next) => {
   const filePath = path.join(__dirname, '../../views', fileName);
   if (fs.existsSync(filePath)) {
-    return res.sendFile(filePath);
+    const hiddenStockLinks = req.user ? [
+      ['/stok-masuk', STOCK_ROLES.IN], ['/stok-keluar', STOCK_ROLES.OUT]
+    ].filter(([, roles]) => !roles.includes(req.user.role)).map(([href]) => `a[href="${href}"]`) : [];
+    if (!hiddenStockLinks.length) return res.sendFile(filePath);
+    // The role has already been revalidated against the DB. Head-level CSS also
+    // covers links created later by the existing inline navigation scripts.
+    return fs.readFile(filePath, 'utf8', (error, html) => {
+      if (error) return next(error);
+      const visibility = `<style id="stock-navigation-rbac">${hiddenStockLinks.join(',')}{display:none!important}</style>`;
+      res.type('html').send(html.replace(/<\/head>/i, visibility + '</head>'));
+    });
   }
   return res.status(200).send(`
     <!DOCTYPE html>

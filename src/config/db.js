@@ -7,17 +7,17 @@ if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === '') {
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL.trim(),
+  connectionTimeoutMillis: 10000,
+  idleTimeoutMillis: 30000,
+  max: 10,
   ssl: {
     rejectUnauthorized: false
   }
 });
 
-pool.on('connect', () => {
-  console.log('[Database] Sukses: Terhubung langsung ke Neon PostgreSQL Cloud.');
-});
-
 pool.on('error', (err) => {
-  console.error('[Database Error FATAL] Kesalahan koneksi PostgreSQL:', err);
+  // pg removes failed idle clients. Never log raw errors containing connection details.
+  console.error('[Database Error] Koneksi idle PostgreSQL terputus:', err.code || err.name);
 });
 
 /**

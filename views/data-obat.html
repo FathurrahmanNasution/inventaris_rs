@@ -587,7 +587,7 @@ const MOCK = (() => {
     const tx = [[30, ref + '089', 'Amoxicillin 500mg', 50, 'Kapsul', 'OUT'], [100, 'PO-0921-014', 'Metformin 500mg', 400, 'Tablet', 'IN'],
       [190, ref + '081', 'Ketorolac Inj 30mg', 6, 'Ampul', 'OUT'], [300, 'PO-0921-012', 'Omeprazole 20mg', 200, 'Kapsul', 'IN'],
       [1500, ref + '142', 'Paracetamol 500mg', 120, 'Tablet', 'OUT']
-    ].map(([m, r, n, q, u, t]) => ({ created_at: new Date(Date.now() - m6e4).toISOString(), reference_number: r, medicine_name: n, quantity: q, unit: u, type: t }));
+    ].map(([m, r, n, q, u, t]) => ({ created_at: new Date(Date.now() - m * 6e4).toISOString(), reference_number: r, medicine_name: n, quantity: q, unit: u, type: t }));
     return { meds, tx };
   };
   let DB; try { DB = JSON.parse(sessionStorage.getItem('mockDb')); } catch {}
