@@ -19,3 +19,8 @@ yarn-error.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Local tooling and isolated PostgreSQL stock tests
+.tmp-tools/
+.tmp-stock-pg/
+.tmp-stock-pg.log

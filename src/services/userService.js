@@ -46,6 +46,15 @@ async function listUsers() {
   const result = await query('SELECT ' + PUBLIC_FIELDS + ' FROM users ORDER BY user_id ASC');
   return result.rows;
 }
+async function getUserDetails(userId, actorId) {
+  const id = validId(userId);
+  const actor = await findUserById(actorId);
+  if (!actor || actor.status !== 'aktif') fail('Sesi tidak lagi aktif.', 401);
+  assertAdmin(actor);
+  const user = await findUserById(id);
+  if (!user) fail('Pengguna tidak ditemukan.', 404);
+  return user;
+}
 // Serialize low-volume account edits so the last-admin check and audit write are atomic.
 async function accountTransaction(actorId, ipAddress, work) {
   const client = await pool.connect();
@@ -113,4 +122,4 @@ async function changePassword(userId, newPassword, actorId, ipAddress, oldPasswo
 }
 module.exports = { ALLOWED_ROLES, PUBLIC_FIELDS, fail, cleanUsername, validId,
   findUserByUsername, findUserById, findUserWithPasswordById, hashPassword, validatePassword,
-  listUsers, registerUser, updateUser, changePassword };
+  listUsers, getUserDetails, registerUser, updateUser, changePassword };

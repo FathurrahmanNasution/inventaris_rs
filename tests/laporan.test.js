@@ -92,7 +92,9 @@ test('stock card builds running balance and honours the period filter', async ()
   assert.equal(all.final_balance, 150);
   const windowed = (await request('/api/laporan/stock-card?medicine_code=MED-A&from=2026-09-04&to=2026-09-30', { jwt: token(ID.pelayanan) })).data.data;
   assert.equal(windowed.entries.length, 2);                         // tx 2026-09-01 di luar jendela
-  assert.equal(windowed.final_balance, 50);                         // -30 + 80
+  assert.equal(windowed.opening_balance, 100);                     // saldo sebelum periode
+  assert.equal(windowed.entries[0].opening_balance, 100);
+  assert.equal(windowed.final_balance, 150);                        // 100 - 30 + 80
   assert.equal((await request('/api/laporan/stock-card?medicine_code=GHOST', { jwt: token(ID.pelayanan) })).status, 404);
   assert.equal((await request('/api/laporan/stock-card?medicine_code=MED-A&from=bad', { jwt: token(ID.pelayanan) })).status, 400);
 });

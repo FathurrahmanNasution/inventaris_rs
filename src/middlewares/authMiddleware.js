@@ -14,7 +14,8 @@ async function authenticateToken(req, res, next) {
 function requireRole(...allowedRoles) {
   return (req, res, next) => {
     if (!req.user || !allowedRoles.includes(req.user.role))
-      return res.status(403).json({ success: false, message: 'Akses khusus Administrator IT.' });
+      return res.status(403).json({ success: false, message: allowedRoles.length === 1 && allowedRoles[0] === 'admin'
+        ? 'Akses khusus Administrator IT.' : 'Peran Anda tidak diizinkan mengakses fitur ini.' });
     next();
   };
 }

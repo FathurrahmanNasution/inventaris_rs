@@ -62,6 +62,7 @@ const authService = require('./src/services/authService');
 | `POST` | `/api/auth/logout` | Terautentikasi | Catat logout dan hapus cookie sesi |
 | `GET` | `/api/auth/me` | Terautentikasi | Ambil informasi profil user yang sedang login |
 | `GET` | `/api/users` | Khusus `admin` | Ambil daftar seluruh akun staf |
+| `GET` | `/api/users/:userId` | Khusus `admin` | Detail akun dengan field publik; 404 bila tidak ditemukan |
 | `POST` | `/api/users` | Khusus `admin` | Tambah akun aktif: username, password, role |
 | `PATCH` | `/api/users/:userId` | Khusus `admin` | Simpan username, role, status (`aktif`/`nonaktif`) |
 | `POST` | `/api/users/:userId/reset-password` | Khusus `admin` | Reset akun lain dengan `newPassword` |
@@ -119,3 +120,19 @@ Batasan sesi: logout menghapus cookie browser; salinan bearer token tetap berlak
 ### Pemeriksaan
 
 `npm test` menjalankan pengujian HTTP dengan adapter database in-memory terisolasi: RBAC empat role, CRUD terbatas, validasi, reset/ganti sandi, sesi lama, lockout, CSRF, log, dan rollback saat audit gagal. Tes ini tidak menyentuh Neon atau akun yang sudah ada. Query baca dan render Admin juga diverifikasi terhadap Neon dengan koneksi read-only. Alur tulis UI diuji menggunakan fixture browser, bukan data operasional.
+
+## Modul Stok Masuk dan Stok Keluar
+
+Backend transaksi IN/OUT, FEFO lintas batch, penguncian PostgreSQL, audit atomik, bukti transaksi, dan kedua formulir stok sudah diimplementasikan. Dokumentasi endpoint, payload, mapping SRS, daftar file, serta pengujian tersedia di [docs/STOCK.md](docs/STOCK.md).
+
+Sebelum memakai endpoint tulis di deployment, terapkan [migrations/001_stock_documents.sql](migrations/001_stock_documents.sql) pada target database yang ditentukan. Migrasi menambahkan dokumen transaksi dan harga beli tanpa menghapus data existing; tidak berjalan otomatis saat startup. Migrasi pada database shared belum dilakukan.
+
+`npm run test:stock` memakai PostgreSQL nyata bila `STOCK_TEST_DATABASE_URL` menunjuk database lokal khusus `stock_inventory_test`; tanpa konfigurasi itu suite PostgreSQL ditandai skip. Pengujian tidak memakai `DATABASE_URL` untuk operasi tulis. Jalankan `python tests/stock-ui-smoke.py` untuk smoke test browser dengan Python Playwright dan Edge, menggunakan database pengujian yang sama.
+
+## Finalisasi Backend Admin
+
+Endpoint `GET /api/users/:userId` kini menyediakan detail akun aman dan digunakan tombol Edit untuk memuat data terbaru. Deskripsi fitur akun/audit diperjelas; tautan transaksi fisik disembunyikan pada halaman Admin. Alur dan deskripsi Add Account existing dipertahankan.
+
+Tidak ada migrasi Admin baru atau penerapan migrasi pada database shared. Dokumentasi requirement, izin endpoint, batas spesifikasi, dan deployment tersedia di [docs/ADMIN.md](docs/ADMIN.md).
+
+`npm run test:admin` menjalankan tes Admin existing dan PostgreSQL bila `ADMIN_TEST_DATABASE_URL` menunjuk database lokal khusus `admin_inventory_test`. Suite Admin tidak membutuhkan migrasi stok. Smoke test browser tersedia melalui `python tests/admin-ui-smoke.py` dengan Python Playwright dan Edge. Seluruh akun uji bersifat sementara dan terisolasi dari akun shared.

@@ -641,7 +641,7 @@
       </div>
       <div class="frow">
         <div class="f"><label class="lbl" for="qty">Jumlah Masuk</label><input id="qty" type="number" min="1" step="1" required></div>
-        <div class="f"><label class="lbl" for="price">Harga Satuan (Rp)</label><input id="price" type="number" min="0" step="1" required></div>
+      <div class="f"><label class="lbl" for="price">Harga Satuan (Rp)</label><input id="price" type="number" min="0" step="0.01" required></div>
       </div>
       <div class="totalbox"><span>Total Nilai Penerimaan</span><strong id="total">Rp 0</strong></div>
       <div class="f"><label class="lbl" for="notes">Keterangan / Catatan</label><textarea id="notes" maxlength="300"></textarea></div>
@@ -668,100 +668,11 @@ const MENU = [['/dashboard','Dashboard'],['/data-obat','Data Obat'],['/stok-masu
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const rp = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
-const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10);
+const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jakarta', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 let me = null;
-const can = rule => USE_MOCK || !me || ROLE_CAN[rule].includes(me.role); // hanya kosmetik UI; otorisasi tetap di server
-
-/* ===== DATA CONTOH (dummy) =====
-   Ubah USE_MOCK ke false setelah backend siap. Login/logout/me tetap memakai backend asli.
-   Reset data contoh: jalankan sessionStorage.removeItem('mockDb') di console, lalu muat ulang. */
-const USE_MOCK = true;
-const MOCK = (() => {
-  const CATS = ['Antibiotik', 'Analgesik', 'Antihipertensi', 'Antidiabetes', 'Antasida', 'Analgesik Injeksi', 'Lainnya'];
-  const lvl = x => !x.is_active ? 'nonaktif' : (x.total_stock <= 0 || x.total_stock <= x.min_stock * 0.5) ? 'kritis' : x.total_stock <= x.min_stock ? 'menipis' : 'aman';
-  const seed = () => {
-    const days = { 1: 12, 3: 24, 8: 18, 9: 27, 10: 29 }; // sisa hari batch terdekat (nomor urut obat)
-    const meds = [
-      ['Amoxicillin 500mg','Antibiotik','Kapsul',450,100,10000], ['Paracetamol 500mg','Analgesik','Tablet',1200,200,3000],
-      ['Cefixime 100mg','Antibiotik','Kapsul',85,100,30000], ['Omeprazole 20mg','Antasida','Kapsul',45,50,30000],
-      ['Metformin 500mg','Antidiabetes','Tablet',800,150,2000], ['Amlodipine 10mg','Antihipertensi','Tablet',650,100,3000],
-      ['Ketorolac Inj 30mg','Analgesik Injeksi','Ampul',12,30,35000], ['Paracetamol Syr 60ml','Analgesik','Botol/Sirup',45,20,15000],
-      ['Ranitidine Inj 25mg','Antasida','Ampul',30,20,8000], ['Ceftriaxone Inj 1g','Antibiotik','Vial',12,15,45000],
-      ['Insulin Glargine','Antidiabetes','Vial',2,10,180000], ['Captopril 25mg','Antihipertensi','Tablet',500,100,1500],
-      ['Ibuprofen 400mg','Analgesik','Tablet',900,200,2500], ['Ciprofloxacin 500mg','Antibiotik','Tablet',300,100,6000],
-      ['Simvastatin 20mg','Lainnya','Tablet',400,100,4000], ['Salbutamol 2mg','Lainnya','Tablet',250,80,1200],
-      ['Dexamethasone Inj','Lainnya','Ampul',120,40,7000], ['Antasida Doen','Antasida','Tablet',600,150,800],
-      ['Glimepiride 2mg','Antidiabetes','Tablet',220,100,3500], ['Furosemide 40mg','Lainnya','Tablet',90,100,1000],
-      ['Vitamin B Complex','Lainnya','Strip',150,50,5000]
-    ].map((r, i) => ({ medicine_code: 'OBT-' + String(i + 1).padStart(3, '0'), name: r[0], category: r[1], unit: r[2], total_stock: r[3], min_stock: r[4], price: r[5], is_active: true, days: days[i + 1] }));
-    const ref = 'RSP-' + today().replace(/-/g, '') + '-';
-    const tx = [[30, ref + '089', 'Amoxicillin 500mg', 50, 'Kapsul', 'OUT'], [100, 'PO-0921-014', 'Metformin 500mg', 400, 'Tablet', 'IN'],
-      [190, ref + '081', 'Ketorolac Inj 30mg', 6, 'Ampul', 'OUT'], [300, 'PO-0921-012', 'Omeprazole 20mg', 200, 'Kapsul', 'IN'],
-      [1500, ref + '142', 'Paracetamol 500mg', 120, 'Tablet', 'OUT']
-    ].map(([m, r, n, q, u, t]) => ({ created_at: new Date(Date.now() - m * 6e4).toISOString(), reference_number: r, medicine_name: n, quantity: q, unit: u, type: t }));
-    return { meds, tx };
-  };
-  const addDays = n => new Date(Date.now() - new Date().getTimezoneOffset() * 6e4 + n * 864e5).toISOString().slice(0, 10);
-  const seedBatches = meds => meds.flatMap(m => {            // pecah stok tiap obat menjadi 3 batch dengan Exp berbeda
-    const st = m.total_stock, p1 = Math.round(st / 3), p2 = Math.round(st * 4 / 9), pre = m.name.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase(), d = m.days ?? 90;
-    return [[p1, d, '02'], [p2, d + 60, '05'], [st - p1 - p2, d + 150, '09']].filter(x => x[0] > 0)
-      .map(([q, dd, n]) => ({ medicine_code: m.medicine_code, batch_number: pre + '-' + n, expired_date: addDays(dd), current_qty: q }));
-  });
-  const seedReceipts = () => [[0, 'PT Kimia Farma T&D', 'Metformin 500mg', 'MTF-07', 400, 'Tablet', '014'], [0, 'PT Kalbe Farma', 'Omeprazole 20mg', 'OMP-03', 200, 'Kapsul', '012'],
-    [2, 'PT Anugerah Pharmindo', 'Amlodipine 10mg', 'AML-05', 300, 'Tablet', '009'], [3, 'PT Kimia Farma T&D', 'Ketorolac Inj 30mg', 'KTL-02', 50, 'Ampul', '004']]
-    .map(([ago, supplier, medicine_name, batch_number, quantity, unit, seq]) => { const d = addDays(-ago); return { received_date: d, reference_number: 'PO-' + d.slice(5, 7) + d.slice(8) + '-' + seq, supplier, medicine_name, batch_number, quantity, unit, status: 'Diterima' }; });
-  let DB; try { DB = JSON.parse(sessionStorage.getItem('mockDb')); } catch {}
-  DB = DB || seed();
-  DB.batches = DB.batches || seedBatches(DB.meds); DB.receipts = DB.receipts || seedReceipts();
-  const save = () => { try { sessionStorage.setItem('mockDb', JSON.stringify(DB)); } catch {} };
-
-  return (url, opt = {}) => {                        // mengembalikan undefined bila endpoint tidak di-mock
-    const u = new URL(url, location.origin), p = u.pathname, q = u.searchParams, m = opt.method || 'GET', b = opt.body || {}, meds = DB.meds;
-    if (p === '/api/categories') return CATS.map(name => ({ name }));
-    if (p === '/api/dashboard') {
-      const act = meds.filter(x => x.is_active), low = act.filter(x => x.total_stock <= x.min_stock), near = act.filter(x => x.days < 30).sort((a, b) => a.days - b.days);
-      const share = {}; act.forEach(x => share[x.category] = (share[x.category] || 0) + x.total_stock);
-      const tot = Object.values(share).reduce((a, b) => a + b, 0) || 1, qty = [144, 180, 168, 228, 204, 252], now = new Date();
-      return {
-        totalMedicines: act.length, assetValue: act.reduce((s, x) => s + x.total_stock * x.price, 0), lowStock: low.length, nearExpiry: near.length,
-        monthlyOut: qty.map((v, i) => ({ month: new Date(now.getFullYear(), now.getMonth() - 5 + i, 1).toLocaleDateString('id-ID', { month: 'short' }), qty: v })),
-        alerts: [...near.map(x => ({ name: x.name, kind: 'expiry', level: 'red', detail: `Batch #${x.medicine_code.slice(-3)} | ${x.days} hari lagi` })),
-          ...low.map(x => ({ name: x.name, kind: 'stock', level: 'yellow', detail: `Stok: ${x.total_stock} ${x.unit} | Batas Min: ${x.min_stock}` }))].slice(0, 6),
-        recentTransactions: DB.tx.slice(0, 5),
-        categoryShare: Object.entries(share).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, v]) => ({ name, percent: Math.round(v / tot * 100) }))
-      };
-    }
-    if (p === '/api/medicines' && m === 'GET') {
-      const s = (q.get('search') || '').toLowerCase(), c = q.get('category'), f = q.get('filter'), pg = +q.get('page') || 1, lim = +q.get('limit') || 20;
-      const r = meds.filter(x => (!s || x.name.toLowerCase().includes(s) || x.medicine_code.toLowerCase().includes(s)) && (!c || x.category === c)
-        && (q.get('active') !== '1' || x.is_active) && (!f || (f === 'expiring' ? x.is_active && x.days < 30 : f === 'low' ? ['menipis', 'kritis'].includes(lvl(x)) : lvl(x) === f)));
-      return { data: r.slice((pg - 1) * lim, pg * lim), total: r.length };
-    }
-    if (p === '/api/medicines' && m === 'POST') {
-      if (meds.some(x => x.medicine_code === b.medicine_code)) throw new Error('Kode obat sudah digunakan.');
-      meds.push({ ...b, total_stock: 0, is_active: true }); save(); return {};
-    }
-    const st = p.match(/^\/api\/medicines\/([^/]+)\/status$/);
-    if (st && m === 'PATCH') { const x = meds.find(y => y.medicine_code === decodeURIComponent(st[1])); if (x) x.is_active = !!b.is_active; save(); return {}; }
-    const bt = p.match(/^\/api\/medicines\/([^/]+)\/batches$/);   // antrean batch aktif, urut Exp terdekat (FEFO)
-    if (bt && m === 'GET') return DB.batches.filter(x => x.medicine_code === decodeURIComponent(bt[1]) && x.current_qty > 0).sort((x, y) => x.expired_date.localeCompare(y.expired_date));
-    if (p === '/api/stock/receipts' && m === 'GET') return DB.receipts.slice(0, +q.get('limit') || 5);
-    if (p === '/api/stock/in' && m === 'POST') {
-      for (const it of b.items) {
-        const x = meds.find(y => y.medicine_code === it.medicine_code); if (!x) throw new Error('Obat tidak ditemukan: ' + it.medicine_code);
-        if (DB.batches.some(y => y.medicine_code === x.medicine_code && y.batch_number.toLowerCase() === it.batch_number.toLowerCase())) throw new Error(`Nomor batch ${it.batch_number} sudah ada untuk obat ini.`);
-        if (!(it.expired_date > today())) throw new Error('Tanggal kedaluwarsa harus setelah hari ini.');
-        x.total_stock += it.quantity; DB.batches.push({ medicine_code: x.medicine_code, batch_number: it.batch_number, expired_date: it.expired_date, current_qty: it.quantity });
-        DB.tx.unshift({ created_at: new Date().toISOString(), reference_number: b.reference_number, medicine_name: x.name, quantity: it.quantity, unit: x.unit, type: 'IN' });
-        DB.receipts.unshift({ received_date: b.received_date || today(), reference_number: b.reference_number, supplier: b.supplier, medicine_name: x.name, batch_number: it.batch_number, quantity: it.quantity, unit: x.unit, status: 'Diterima' });
-      }
-      save(); return { received_at: new Date().toISOString() };
-    }
-  };
-})();
+const can = rule => !!me && ROLE_CAN[rule].includes(me.role); // hanya kosmetik UI; otorisasi tetap di server
 
 async function api(url, opt = {}) {
-  if (USE_MOCK) { await new Promise(r => setTimeout(r, 200)); const d = MOCK(url, opt); if (d !== undefined) return d; }
   const r = await fetch(url, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, ...opt, body: opt.body ? JSON.stringify(opt.body) : undefined });
   if (r.status === 401) { location.assign('/login'); throw new Error('Sesi berakhir. Silakan masuk lagi.'); }
   const j = await r.json().catch(() => ({}));
@@ -808,14 +719,15 @@ async function loadRecent() {
 }
 async function loadBatches() {
   const code = $('med').value; batches = []; renderFefo(); if (!code) return;
-  try { const b = await api(`/api/medicines/${encodeURIComponent(code)}/batches`); if (code === $('med').value) batches = b; }
+  try { const b = await api(`/api/stock/medicines/${encodeURIComponent(code)}/batches`); if (code === $('med').value) batches = b; }
   catch (e) { flash($('msg'), e.message); }
   renderFefo();
 }
-function fillReceipt(r) {   // bukti penerimaan yang dicetak (hanya tampil saat print)
-  const rows = [['No. PO / Faktur', r.ref], ['Tanggal terima', fmtD(r.date)], ['Supplier', r.supplier], ['Obat', `${r.m.medicine_code} | ${r.m.name}`], ['No. batch', r.it.batch_number],
-    ['Tgl kedaluwarsa', fmtD(r.it.expired_date)], ['Jumlah', `${r.it.quantity.toLocaleString('id-ID')} ${r.m.unit}`], ['Harga satuan', rp(r.it.unit_price)],
-    ['Total nilai', rp(r.it.quantity * r.it.unit_price)], ['Keterangan', r.notes || '-'], ['Diterima oleh', me?.username || '-']];
+function fillReceipt(r) {   // Bukti memakai hasil transaksi yang telah di-commit server.
+  const it = r.items[0];
+  const rows = [['ID bukti', r.document_id], ['No. PO / Faktur', r.reference_number], ['Tanggal terima', fmtD(r.transaction_date)], ['Supplier', r.supplier], ['Obat', `${it.medicine_code} | ${it.medicine_name}`], ['No. batch', it.batch_number],
+    ['Tgl kedaluwarsa', fmtD(it.expired_date)], ['Jumlah', `${it.quantity.toLocaleString('id-ID')} ${it.unit}`], ['Harga satuan', rp(it.unit_price)],
+    ['Total nilai', rp(it.quantity * it.unit_price)], ['Keterangan', r.notes || '-'], ['Diterima oleh', r.username || '-']];
   $('receipt').innerHTML = '<h2>Bukti Penerimaan Barang</h2><table><tbody>' + rows.map(([k, v]) => `<tr><th>${k}</th><td>${esc(v)}</td></tr>`).join('') + '</tbody></table>';
 }
 
@@ -832,11 +744,11 @@ $('frm').onsubmit = async e => {
   if (!(it.expired_date > today())) return flash($('msg'), 'Tanggal kedaluwarsa harus setelah hari ini.');
   if (!Number.isInteger(it.quantity) || it.quantity < 1) return flash($('msg'), 'Jumlah masuk harus bilangan bulat minimal 1.');
   if (+it.unit_price < 0) return flash($('msg'), 'Harga satuan tidak boleh negatif.');
-  if (batches.some(b => b.batch_number.toLowerCase() === it.batch_number.toLowerCase())) return flash($('msg'), `Nomor batch ${it.batch_number} sudah ada untuk obat ini.`);
-  it.unit_price = +it.unit_price; $('save').disabled = true;
+  if (batches.some(b => b.batch_number === it.batch_number)) return flash($('msg'), `Nomor batch ${it.batch_number} sudah digunakan.`);
+  $('save').disabled = true;
   try {
-    await api('/api/stock/in', { method: 'POST', body: { reference_number: ref, received_date: date, supplier, notes, items: [it] } });
-    fillReceipt({ ref, date, supplier, notes, m, it });
+    const receipt = await api('/api/stock/in', { method: 'POST', body: { reference_number: ref, received_date: date, supplier, notes, items: [it] } });
+    fillReceipt(receipt);
     $('okText').textContent = `Penerimaan ${ref} tersimpan: +${it.quantity.toLocaleString('id-ID')} ${m.unit} ${m.name} (batch ${it.batch_number}).`; $('ok').className = 'alert ok show';
     $('frm').reset(); $('recv').value = today(); recalc(); loadBatches(); loadRecent();
   } catch (err) { flash($('msg'), err.message); }
@@ -847,8 +759,8 @@ $('frm').onsubmit = async e => {
   await boot('/stok-masuk');
   if (!can('stokMasuk')) { $('cols').hidden = true; return flash($('msg'), 'Peran Anda tidak memiliki akses untuk mencatat stok masuk.'); }
   $('recv').value = today(); $('recv').max = today();
-  $('exp').min = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4 + 864e5).toISOString().slice(0, 10);
-  try { meds = (await api('/api/medicines?active=1&limit=500')).data; } catch (e) { flash($('msg'), e.message); }
+  $('exp').min = new Date(Date.parse(today()) + 864e5).toISOString().slice(0, 10);
+  try { meds = (await api('/api/stock/medicines?limit=500')).data; } catch (e) { flash($('msg'), e.message); }
   $('med').innerHTML = '<option value="">Pilih obat</option>' + meds.map(m => `<option value="${esc(m.medicine_code)}">${esc(m.medicine_code)} | ${esc(m.name)} ${esc(m.unit)}</option>`).join('');
   recalc(); renderFefo(); loadRecent();
 })();

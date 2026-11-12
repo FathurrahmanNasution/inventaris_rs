@@ -110,6 +110,19 @@ test('Admin can read page, users, and audit logs without hashes', async () => {
   assert.ok(!JSON.stringify(result.data).includes('password_hash'));
   assert.equal((await request('/api/audit-logs', { jwt })).status, 200);
 });
+
+test('Admin details returns permitted fields, validates IDs and requires Admin access', async () => {
+  const result = await request('/api/users/2', { jwt: token() });
+  assert.equal(result.status, 200);
+  assert.deepEqual(Object.keys(result.data.data.user).sort(), ['created_at', 'role', 'status', 'user_id', 'username']);
+  assert.equal(result.data.data.user.username, 'test_gudang');
+  assert.equal((await request('/api/users/999', { jwt: token() })).status, 404);
+  for (const id of ['0', '-1', '1.5', 'nope', '2147483648'])
+    assert.equal((await request('/api/users/' + id, { jwt: token() })).status, 400);
+  assert.equal((await request('/api/users/2')).status, 401);
+  for (const id of [2, 3, 4]) assert.equal((await request('/api/users/1', { jwt: token(id) })).status, 403);
+  assert.equal(logs.length, 0, 'detail retrieval does not create mutation audits');
+});
 test('create account normalizes username, hashes password and audits the actor', async () => {
   const result = await request('/api/users', { jwt: token(), method: 'POST', body: { username: 'New_Staff', password: 'StaffNew123', role: 'gudang' } });
   assert.equal(result.status, 201); assert.equal(result.data.data.user.username, 'new_staff');

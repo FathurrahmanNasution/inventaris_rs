@@ -56,8 +56,8 @@ router.get('/stok-masuk', authenticateToken, requireRole('gudang', 'kepala_farma
 // 5. Admin Page (Placeholder handover untuk tim frontend admin)
 router.get(['/admin', '/admin/users'], authenticateToken, requireRole('admin'), serveView('admin.html', 'Halaman Admin'));
 
-// Stok Keluar (semua user yang sudah login)
-router.get('/stok-keluar', authenticateToken, serveView('stok-keluar.html', 'Stok Keluar'));
+// Pengeluaran fisik: apoteker pelayanan dan Kepala Farmasi (SRS 2.3).
+router.get('/stok-keluar', authenticateToken, requireRole('pelayanan', 'kepala_farmasi'), serveView('stok-keluar.html', 'Stok Keluar'));
 
 router.get('/monitoring', authenticateToken, serveView('monitoring.html', 'Monitoring'));
 

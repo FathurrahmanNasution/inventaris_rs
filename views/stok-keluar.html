@@ -61,6 +61,13 @@
     .message { padding: 12px; border-radius: 4px; margin: 0 0 14px; background: #c6f6d5; color: var(--active-text); font-size: 14px; }
     .message.error { background: #fed7d7; color: #9b2c2c; }
     [hidden] { display: none !important; }
+    #receipt { margin-top: 18px; }
+    #receipt p { overflow-wrap: anywhere; }
+    @media print {
+      header, aside, .page-title, .subtitle, .grid, #message, #printOut { display: none !important; }
+      .window, .body, main { display: block; height: auto; overflow: visible; padding: 0; }
+      #receipt { border: 0; }
+    }
 
     @media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
     @media (max-width: 900px) {
@@ -123,19 +130,7 @@
     const roleNames = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
     const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
-    // DATA CONTOH (tampilan saja). Ganti dengan data dari API saat backend stok tersedia.
-    const drugs = [
-      { id: 'OBT-001', name: 'Amoxicillin 500mg Kapsul', unit: 'kapsul', batches: [
-        { code: 'AMX-09', exp: '2027-01-28', stock: 100 },
-        { code: 'AMX-02', exp: '2026-10-03', stock: 150 },
-        { code: 'AMX-05', exp: '2026-11-15', stock: 200 } ] },
-      { id: 'OBT-002', name: 'Paracetamol 500mg Tablet', unit: 'tablet', batches: [
-        { code: 'PCT-03', exp: '2027-03-10', stock: 600 },
-        { code: 'PCT-01', exp: '2026-12-20', stock: 600 } ] },
-      { id: 'OBT-003', name: 'Cefixime 100mg Kapsul', unit: 'kapsul', batches: [
-        { code: 'CFX-02', exp: '2027-05-05', stock: 40 },
-        { code: 'CFX-01', exp: '2027-02-14', stock: 43 } ] }
-    ];
+    let drugs = [];
 
     function fmtDate(iso) { const [y, m, d] = iso.split('-'); return d + '-' + MONTHS[+m - 1] + '-' + y; }
     function message(text, error = false) { const el = $('message'); el.textContent = text; el.className = 'message' + (error ? ' error' : ''); el.hidden = false; }
@@ -151,33 +146,61 @@
       if (!drug) { $('batchAuto').value = ''; const p = document.createElement('p'); p.className = 'sub'; p.textContent = 'Pilih obat untuk melihat batch aktif.'; list.append(p); return; }
       const batches = sortedBatches(drug);
       if (!batches.length) { $('batchAuto').value = 'Tidak ada stok tersedia'; list.textContent = 'Tidak ada batch aktif.'; return; }
-      const first = batches[0];
-      $('batchAuto').value = 'Batch #' + first.code + ' (Exp: ' + fmtDate(first.exp) + ', Stok: ' + first.stock + ')';
+      let remaining = Math.max(0, Number($('qty').value) || 0);
+      const allocation = [];
       batches.forEach((b, i) => {
+        const take = Math.min(remaining, b.stock); remaining -= take;
+        if (take > 0) allocation.push(b.code + ': ' + take);
         const div = document.createElement('div'); div.className = 'batch c' + Math.min(i, 3);
-        const title = document.createElement('strong'); title.textContent = (i + 1) + '. Batch #' + b.code + (i === 0 ? ' (Dipilih Otomatis)' : '');
+        const title = document.createElement('strong'); title.textContent = (i + 1) + '. Batch #' + b.code + (take > 0 ? ' (Alokasi: ' + take + ')' : '');
         const info = document.createElement('span'); info.textContent = 'Exp: ' + fmtDate(b.exp) + ' | Sisa: ' + b.stock + ' ' + drug.unit;
         div.append(title, info); list.append(div);
       });
+      $('batchAuto').value = allocation.length ? allocation.join(' | ') + (remaining ? ' | Kurang: ' + remaining : '') : 'Urutan FEFO: ' + batches.map(b => b.code).join(' → ');
     }
 
-    $('drug').addEventListener('change', () => { $('message').hidden = true; renderBatches(); });
+    async function loadBatches() {
+      const drug = currentDrug();
+      if (!drug) return renderBatches();
+      drug.batches = []; renderBatches();
+      try {
+        const result = await api('/api/stock/medicines/' + encodeURIComponent(drug.id) + '/batches');
+        drug.batches = result.data.map(b => ({ code: b.batch_number, exp: b.expired_date, stock: Number(b.current_qty) }));
+        if (drug === currentDrug()) renderBatches();
+      } catch (error) { message(error.message, true); }
+    }
+    $('drug').addEventListener('change', () => { $('message').hidden = true; loadBatches(); });
+    $('qty').addEventListener('input', renderBatches);
 
-    $('outForm').addEventListener('submit', event => {
+    function renderReceipt(receipt) {
+      let box = $('receipt');
+      if (!box) { box = document.createElement('section'); box.id = 'receipt'; box.className = 'card'; document.querySelector('main').append(box); }
+      box.replaceChildren();
+      const heading = document.createElement('h2'); heading.textContent = 'Bukti Pengeluaran Obat'; box.append(heading);
+      const lines = ['ID bukti: ' + receipt.document_id, 'No. resep/referensi: ' + receipt.reference_number,
+        'Tanggal: ' + fmtDate(receipt.transaction_date), 'Unit tujuan: ' + receipt.destination, 'Petugas: ' + receipt.username,
+        'Catatan: ' + (receipt.notes || '-')];
+      for (const item of receipt.items) lines.push(item.medicine_code + ' | ' + item.medicine_name + ' | Batch ' + item.batch_number +
+        ' | Exp: ' + fmtDate(item.expired_date) + ' | ' + item.quantity + ' ' + item.unit);
+      for (const text of lines) { const p = document.createElement('p'); p.textContent = text; box.append(p); }
+      const print = document.createElement('button'); print.id = 'printOut'; print.type = 'button'; print.textContent = 'Cetak bukti'; print.onclick = () => window.print(); box.append(print);
+    }
+
+    $('outForm').addEventListener('submit', async event => {
       event.preventDefault();
       const drug = currentDrug(), qty = Number($('qty').value);
       if (!$('refNo').value.trim() || !$('unit').value.trim()) return message('No. referensi dan unit tujuan wajib diisi.', true);
       if (!drug) return message('Pilih obat terlebih dahulu.', true);
-      const batch = sortedBatches(drug)[0];
-      if (!batch) return message('Stok obat ini sedang kosong.', true);
       if (!Number.isInteger(qty) || qty < 1) return message('Jumlah keluar harus berupa bilangan bulat minimal 1.', true);
-      if (qty > batch.stock) return message('Jumlah melebihi stok batch terpilih (' + batch.stock + ' ' + drug.unit + ').', true);
-      if (!confirm('Simpan pengeluaran ' + qty + ' ' + drug.unit + ' ' + drug.name + ' dari batch #' + batch.code + '?')) return;
-      // TODO: kirim ke backend, mis. await api('/api/stock-out', 'POST', {...})
-      batch.stock -= qty;
-      message('Pengeluaran obat berhasil dicatat (' + qty + ' ' + drug.unit + ' dari batch #' + batch.code + ').');
-      $('qty').value = ''; $('note').value = '';
-      renderBatches();
+      $('saveOut').disabled = true;
+      try {
+        const result = await api('/api/stock/out', 'POST', { reference_number: $('refNo').value.trim(), destination: $('unit').value.trim(),
+          medicine_code: drug.id, quantity: qty, notes: $('note').value.trim() });
+        renderReceipt(result.data);
+        message('Pengeluaran tersimpan: ' + qty + ' ' + drug.unit + ' dari ' + result.data.items.length + ' batch sesuai FEFO.');
+        $('outForm').reset(); renderBatches();
+      } catch (error) { message(error.message, true); await loadBatches(); }
+      finally { $('saveOut').disabled = false; }
     });
 
     async function api(url, method = 'GET', body) {
@@ -195,14 +218,16 @@
       catch (error) { message(error.message, true); $('logout').disabled = false; }
     });
 
-    renderDrugOptions();
-    $('drug').value = 'OBT-001'; renderBatches();
     (async () => {
+      $('saveOut').disabled = true;
       try {
         const user = (await api('/api/auth/me')).data.user;
         $('identity').textContent = user.username + ' | ' + (roleNames[user.role] || user.role);
         $('navUsers').hidden = user.role !== 'admin'; // Manajemen Pengguna hanya untuk Admin
-      } catch (error) { $('identity').textContent = 'Sesi tidak terhubung'; }
+        if (!['pelayanan', 'kepala_farmasi'].includes(user.role)) return message('Peran Anda tidak diizinkan mencatat pengeluaran.', true);
+        drugs = (await api('/api/stock/medicines?limit=500')).data.data.map(m => ({ id: m.medicine_code, name: m.name, unit: m.unit, batches: [] }));
+        renderDrugOptions(); renderBatches(); $('saveOut').disabled = false;
+      } catch (error) { message(error.message, true); }
     })();
   </script>
 </body>
