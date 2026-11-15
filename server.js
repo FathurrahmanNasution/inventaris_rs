@@ -24,6 +24,7 @@ app.use('/api/audit-logs', require('./src/routes/auditRoutes'));
 app.use('/api/monitoring', require('./src/routes/monitoringRoutes'));
 app.use('/api/laporan', require('./src/routes/reportRoutes'));
 app.use('/api/stock', require('./src/routes/stockRoutes'));
+app.use('/api/dashboard', require('./src/routes/dashboardRoutes'));
 
 const viewRoutes = require('./src/routes/viewRoutes');
 

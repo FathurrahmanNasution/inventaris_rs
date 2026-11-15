@@ -35,7 +35,9 @@
     button:focus-visible, a:focus-visible { outline: 3px solid #bee3f8; outline-offset: 2px; }
     .secondary { color: var(--text); background: var(--th-bg); }
 
-    .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .tab.low.active { background: var(--orange); border-color: var(--orange); }
+    .link-act { display: inline-block; background: var(--blue); color: #fff; padding: 9px 14px; border-radius: 3px; font-size: 13px; font-weight: 700; text-decoration: none; }
     .tab { background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 3px; padding: 16px 10px; font-size: 14px; }
     .tab.active { background: var(--red); border-color: var(--red); color: #fff; }
 
@@ -61,6 +63,7 @@
       .brand { padding: 6px 14px; } aside a { padding: 10px 14px; }
       main { padding: 20px; overflow-y: visible; }
     }
+    @media (max-width: 900px) { .tabs { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 600px) { .tabs { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -87,17 +90,25 @@
       </aside>
       <main>
         <h2 class="page-title">Pusat Monitoring Kadaluarsa &amp; Ambang Batas Minimum</h2>
-        <p class="subtitle">Tindak lanjuti batch yang mendekati kedaluwarsa.</p>
+        <p class="subtitle">Tindak lanjuti batch yang mendekati kedaluwarsa dan obat yang stoknya di bawah batas minimum.</p>
         <div id="message" class="message" role="status" aria-live="polite" hidden></div>
         <div class="tabs" role="tablist" aria-label="Filter alert">
           <button class="tab" id="tabAll" role="tab" data-filter="all">Semua Alert (0)</button>
-          <button class="tab active" id="tabCritical" role="tab" data-filter="critical">Kritis &lt; 30 Hari (0)</button>
-          <button class="tab" id="tabWarning" role="tab" data-filter="warning">Perhatian 30-90 Hari (0)</button>
+          <button class="tab active" id="tabCritical" role="tab" data-filter="critical">Kritis &le; 30 Hari (0)</button>
+          <button class="tab" id="tabWarning" role="tab" data-filter="warning">Perhatian 31-90 Hari (0)</button>
+          <button class="tab low" id="tabLow" role="tab" data-filter="low">Stok Menipis (0)</button>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap" id="expiryWrap">
           <table>
             <thead><tr><th>Nama Obat</th><th>No. Batch</th><th>Tgl Kedaluwarsa</th><th>Sisa Hari</th><th>Sisa Stok</th><th>Tindakan / Aksi</th></tr></thead>
             <tbody id="alertBody"></tbody>
+          </table>
+        </div>
+        <!-- Stok minimum (REQ-ADM-ALERT-002/003): merah = habis, kuning = menipis -->
+        <div class="table-wrap" id="lowWrap" hidden>
+          <table>
+            <thead><tr><th>Nama Obat</th><th>Kode</th><th>Total Stok</th><th>Batas Minimum</th><th>Status</th><th>Tindakan / Aksi</th></tr></thead>
+            <tbody id="lowBody"></tbody>
           </table>
         </div>
       </main>
@@ -111,7 +122,12 @@
     // Data diambil dari API backend monitoring (/api/monitoring/expiry).
     let alerts = [];
     let summary = { all: 0, critical: 0, warning: 0 };
-    let filter = 'critical';
+    let lowStock = [];
+    let user = null;
+    let filter = new URLSearchParams(location.search).get('tab') === 'low' ? 'low' : 'critical';
+    // Mengikuti hak akses backend: tindak lanjut alert dan stok masuk bukan untuk Admin IT (SoD).
+    const ACTION_ROLES = ['gudang', 'pelayanan', 'kepala_farmasi'];
+    const STOCK_IN_ROLES = ['gudang', 'kepala_farmasi'];
 
     function fmtDate(iso) {
       if (!iso) return '-';
@@ -124,11 +140,34 @@
     // Heuristik aksi: batch kritis diajukan retur, perhatian diprioritaskan distribusi.
     const actionFor = a => isCritical(a) ? { type: 'retur', label: 'Ajukan Retur' } : { type: 'distribusi', label: 'Distribusi Cepat' };
 
+    function renderLow() {
+      $('lowBody').replaceChildren();
+      for (const m of lowStock) {
+        const tr = document.createElement('tr');
+        const add = (text, cls) => { const td = document.createElement('td'); td.textContent = text; if (cls) td.className = cls; tr.append(td); return td; };
+        add(m.name, 'name'); add(m.medicine_code);
+        add(m.total_stock + ' ' + (m.unit || ''), 'stock'); add(m.min_stock + ' ' + (m.unit || ''));
+        const pill = document.createElement('span'); pill.className = 'pill' + (m.status === 'habis' ? '' : ' warn');
+        pill.textContent = m.status === 'habis' ? 'Habis' : 'Menipis'; add('').append(pill);
+        const cell = add('');
+        if (user && STOCK_IN_ROLES.includes(user.role)) {
+          const a = document.createElement('a'); a.className = 'link-act'; a.href = '/stok-masuk'; a.textContent = 'Catat Stok Masuk'; cell.append(a);
+        } else cell.textContent = '-';
+        $('lowBody').append(tr);
+      }
+      if (!lowStock.length) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 6; td.textContent = 'Tidak ada obat di bawah batas minimum.'; tr.append(td); $('lowBody').append(tr); }
+    }
+
     function render() {
       $('tabAll').textContent = 'Semua Alert (' + summary.all + ')';
-      $('tabCritical').textContent = 'Kritis < 30 Hari (' + summary.critical + ')';
-      $('tabWarning').textContent = 'Perhatian 30-90 Hari (' + summary.warning + ')';
+      $('tabCritical').textContent = 'Kritis ≤ 30 Hari (' + summary.critical + ')';
+      $('tabWarning').textContent = 'Perhatian 31-90 Hari (' + summary.warning + ')';
+      $('tabLow').textContent = 'Stok Menipis (' + lowStock.length + ')';
       document.querySelectorAll('.tab').forEach(t => { const on = t.dataset.filter === filter; t.classList.toggle('active', on); t.setAttribute('aria-selected', on); });
+      $('lowWrap').hidden = filter !== 'low';
+      $('expiryWrap').hidden = filter === 'low';
+      if (filter === 'low') { renderLow(); return; }
+      const canAct = !user || ACTION_ROLES.includes(user.role);
       const rows = (filter === 'all' ? alerts : alerts.filter(a => a.status === filter)).slice()
         .sort((a, b) => a.days_remaining - b.days_remaining);
       $('alertBody').replaceChildren();
@@ -149,19 +188,27 @@
             message(act.label + ' untuk batch #' + a.batch_number + ' berhasil dicatat.');
           } catch (error) { message(error.message, true); btn.disabled = false; }
         });
-        add('').append(btn);
+        if (canAct) add('').append(btn); else add('-');
         $('alertBody').append(tr);
       }
       if (!rows.length) { const tr = document.createElement('tr'), td = document.createElement('td'); td.colSpan = 6; td.textContent = 'Tidak ada alert pada kategori ini.'; tr.append(td); $('alertBody').append(tr); }
     }
-    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { filter = t.dataset.filter; $('message').hidden = true; render(); }));
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+      filter = t.dataset.filter; $('message').hidden = true;
+      const url = new URL(location.href);
+      if (filter === 'low') url.searchParams.set('tab', 'low'); else url.searchParams.delete('tab');
+      history.replaceState(null, '', url);
+      render();
+    }));
 
     async function loadAlerts() {
-      try {
-        const data = (await api('/api/monitoring/expiry?filter=all')).data;
-        alerts = data.alerts || [];
-        summary = data.summary || { all: 0, critical: 0, warning: 0 };
-      } catch (error) { message('Gagal memuat data alert: ' + error.message, true); }
+      const [expiry, low] = await Promise.allSettled([api('/api/monitoring/expiry?filter=all'), api('/api/monitoring/low-stock')]);
+      if (expiry.status === 'fulfilled') {
+        alerts = expiry.value.data.alerts || [];
+        summary = expiry.value.data.summary || { all: 0, critical: 0, warning: 0 };
+      } else message('Gagal memuat data alert: ' + expiry.reason.message, true);
+      if (low.status === 'fulfilled') lowStock = low.value.data.items || [];
+      else message('Gagal memuat data stok menipis: ' + low.reason.message, true);
       render();
     }
 
@@ -184,9 +231,10 @@
     loadAlerts();
     (async () => {
       try {
-        const user = (await api('/api/auth/me')).data.user;
+        user = (await api('/api/auth/me')).data.user;
         $('identity').textContent = user.username + ' | ' + (roleNames[user.role] || user.role);
         $('navUsers').hidden = user.role !== 'admin'; // Manajemen Pengguna hanya untuk Admin
+        render(); // perbarui tombol aksi sesuai peran
       } catch (error) { $('identity').textContent = 'Sesi tidak terhubung'; }
     })();
   </script>

@@ -350,15 +350,16 @@
   <section class="row4">
     <div class="k"><span>Total jenis obat</span><strong id="k1">–</strong><small>Aktif di katalog</small></div>
     <div class="k green"><span>Nilai aset obat</span><strong id="k2">–</strong><small>Valuasi stok fisik</small></div>
-    <a class="k orange" href="/data-obat?filter=low"><span>Stok menipis / kritis</span><strong id="k3">–</strong><small>Perlu re-order</small></a>
-    <a class="k red" href="/data-obat?filter=expiring"><span>Mendekati kedaluwarsa</span><strong id="k4">–</strong><small>&lt; 30 hari (retur)</small></a>
+    <a class="k orange" href="/monitoring?tab=low"><span>Stok menipis / kritis</span><strong id="k3">–</strong><small>Perlu re-order</small></a>
+    <a class="k red" href="/monitoring"><span>Mendekati kedaluwarsa</span><strong id="k4">–</strong><small>&le; 30 hari (retur)</small></a>
   </section>
 
+  <!-- Aksi cepat (REQ-DASH-005); tombol disembunyikan bila peran tidak berhak. -->
   <section class="row4">
-    <a class="tile" href="/stok-keluar"><div class="ic" style="background:#4aa35e">↗</div><div><b>Catat stok keluar</b><small>Distribusi &amp; resep (FEFO)</small></div></a>
+    <a class="tile" href="/stok-masuk" data-need="stokMasuk"><div class="ic">↘</div><div><b>Catat stok masuk baru</b><small>Penerimaan dari supplier</small></div></a>
+    <a class="tile" href="/stok-keluar" data-need="stokKeluar"><div class="ic" style="background:#4aa35e">↗</div><div><b>Catat pengeluaran resep</b><small>Distribusi &amp; resep (FEFO)</small></div></a>
+    <a class="tile" href="/laporan" data-need="opname"><div class="ic" style="background:var(--orange)">✓</div><div><b>Audit stock opname</b><small>Hitung fisik &amp; selisih</small></div></a>
     <a class="tile" href="/data-obat?add=1" data-need="kelolaObat"><div class="ic">+</div><div><b>Tambah obat</b><small>Master data katalog</small></div></a>
-    <a class="tile" href="/data-obat?filter=expiring"><div class="ic" style="background:var(--red)">!</div><div><b>Cek kedaluwarsa</b><small id="t3">–</small></div></a>
-    <a class="tile" href="/data-obat?filter=low"><div class="ic" style="background:var(--orange)">↻</div><div><b>Re-order obat</b><small id="t4">–</small></div></a>
   </section>
 
   <section class="grid2">
@@ -375,48 +376,16 @@
 </main>
 
 <script>
-/*BAGIAN 1: DEMO DATA*/
-// Ganti objek DEMO_DATA ini atau ubah pemanggilan di bawah ke endpoint API dashboard backend (misal: /api/dashboard)
-const DEMO_DATA = {
-  totalMedicines: 128,
-  assetValue: 187650000,
-  lowStock: 8,
-  nearExpiry: 5,
-  monthlyOut: [
-    { month: 'Jun', qty: 420 },
-    { month: 'Jul', qty: 510 },
-    { month: 'Agu', qty: 465 },
-    { month: 'Sep', qty: 590 },
-    { month: 'Okt', qty: 545 },
-    { month: 'Nov', qty: 620 }
-  ],
-  alerts: [
-    { name: 'Paracetamol 500 mg', level: 'red', detail: 'Stok tersisa 12 strip — di bawah batas minimum' },
-    { name: 'Amoxicillin 500 mg', level: 'red', detail: 'Stok tersisa 8 strip — perlu segera re-order' },
-    { name: 'Cetirizine 10 mg', level: 'orange', detail: 'Batch mendekati kedaluwarsa' },
-    { name: 'Omeprazole 20 mg', level: 'orange', detail: 'Batch mendekati kedaluwarsa' }
-  ],
-  recentTransactions: [
-    { created_at: new Date().toISOString(), reference_number: 'TRX-2026-1101', medicine_name: 'Paracetamol 500 mg', quantity: 20, unit: 'strip', type: 'OUT' },
-    { created_at: new Date(Date.now() - 3600000).toISOString(), reference_number: 'TRX-2026-1100', medicine_name: 'Infus NaCl 0,9%', quantity: 50, unit: 'botol', type: 'IN' },
-    { created_at: new Date(Date.now() - 86400000).toISOString(), reference_number: 'TRX-2026-1099', medicine_name: 'Amoxicillin 500 mg', quantity: 10, unit: 'strip', type: 'OUT' },
-    { created_at: new Date(Date.now() - 172800000).toISOString(), reference_number: 'TRX-2026-1098', medicine_name: 'Vitamin C', quantity: 30, unit: 'strip', type: 'IN' },
-    { created_at: new Date(Date.now() - 259200000).toISOString(), reference_number: 'TRX-2026-1097', medicine_name: 'Omeprazole 20 mg', quantity: 15, unit: 'strip', type: 'OUT' }
-  ],
-  categoryShare: [
-    { name: 'Analgesik & Antipiretik', percent: 32 },
-    { name: 'Antibiotik', percent: 26 },
-    { name: 'Vitamin & Suplemen', percent: 18 },
-    { name: 'Obat Saluran Pencernaan', percent: 14 },
-    { name: 'Lainnya', percent: 10 }
-  ]
-};
-
+// Data dashboard diambil dari API backend (/api/dashboard).
 const ROLE_NAMES = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
+// Mengikuti hak akses backend (SRS 2.3).
 const ROLE_CAN = {
   stokMasuk: ['gudang', 'kepala_farmasi'],
+  stokKeluar: ['pelayanan', 'kepala_farmasi'],
+  opname: ['gudang', 'kepala_farmasi'],
   kelolaObat: ['kepala_farmasi']
 };
+const TX_TYPE = { IN: ['Masuk', 'green'], OUT: ['Keluar', 'yellow'], ADJUSTMENT: ['Penyesuaian', 'gray'] };
 const MENU = [['/dashboard','Dashboard'],['/data-obat','Data Obat'],['/stok-masuk','Stok Masuk'],['/stok-keluar','Stok Keluar'],['/monitoring','Monitoring'],['/laporan','Laporan'],['/admin','Pengguna']];
 const COL = ['#4a90e2', '#3fb768', '#e8833a', '#7aa7ea', '#6b7690'];
 
@@ -469,22 +438,24 @@ async function boot(active) {
   $('identity').textContent = me ? `${me.username} | ${ROLE_NAMES[me.role] || me.role}` : '';
   $('menuAdmin').hidden = !!me && me.role !== 'admin';
   document.querySelectorAll('[data-need]').forEach(e => { if (!can(e.dataset.need)) e.hidden = true; });
+  // Baris aksi cepat disembunyikan bila tidak ada aksi untuk peran ini (mis. Admin IT).
+  document.querySelectorAll('section.row4').forEach(s => {
+    const tiles = [...s.querySelectorAll('.tile')];
+    if (tiles.length && tiles.every(t => t.hidden)) s.hidden = true;
+  });
 }
 (async () => {
   await boot('/dashboard');
   const nm = me && (me.fullName || me.full_name || me.name || me.username);
-  $('sub').textContent = (nm ? `Selamat datang, ${nm} | ` : '') + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + ' | Data dashboard simulasi';
-  
+  $('sub').textContent = (nm ? `Selamat datang, ${nm} | ` : '') + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
   try {
-    // [GANTI KETIKA API DASHBOARD SIAP] Ubah baris ini ke pemanggilan API backend yang sebenarnya (misal: await api('/api/dashboard'))
-    const d = DEMO_DATA; 
-    
+    const d = await api('/api/dashboard');
+
     $('k1').textContent = Number(d.totalMedicines).toLocaleString('id-ID') + ' Item';
     $('k2').textContent = rp(d.assetValue);
     $('k3').textContent = d.lowStock + ' Obat';
     $('k4').textContent = d.nearExpiry + ' Batch';
-    $('t3').textContent = d.nearExpiry + ' batch < 30 hari';
-    $('t4').textContent = d.lowStock + ' obat di bawah batas min';
 
     const out = d.monthlyOut || [], max = Math.max(...out.map(m => m.qty), 1);
     $('chart').innerHTML = out.length ? out.map(m => `<div class="bar"><b>${esc(m.qty)}</b><i style="height:${Math.round((m.qty / max) * 150)}px"></i><small>${esc(m.month)}</small></div>`).join('') : '<p class="empty">Belum ada data pengeluaran.</p>';
@@ -493,7 +464,7 @@ async function boot(active) {
     $('alerts').innerHTML = a.length ? a.map(x => `<li class="al"><b>${esc(x.name)}</b><br><small class="${x.level === 'red' ? 'r' : 'o'}">${esc(x.detail)}</small></li>`).join('') : '<li class="empty">Tidak ada peringatan.</li>';
 
     const t = d.recentTransactions || [];
-    $('tx').innerHTML = t.length ? t.map(x => `<tr><td class="mut">${esc(when(x.created_at))}</td><td class="mut">${esc(x.reference_number)}</td><td><strong>${esc(x.medicine_name)}</strong></td><td class="mut">${esc(x.quantity)} ${esc(x.unit)}</td><td><span class="badge ${x.type === 'IN' ? 'green' : 'yellow'}">${x.type === 'IN' ? 'Masuk' : 'Keluar'}</span></td></tr>`).join('') : '<tr><td colspan="5" class="empty">Belum ada transaksi.</td></tr>';
+    $('tx').innerHTML = t.length ? t.map(x => `<tr><td class="mut">${esc(when(x.created_at))}</td><td class="mut">${esc(x.reference_number)}</td><td><strong>${esc(x.medicine_name)}</strong></td><td class="mut">${esc(x.quantity)} ${esc(x.unit)}</td><td><span class="badge ${(TX_TYPE[x.type] || TX_TYPE.OUT)[1]}">${(TX_TYPE[x.type] || TX_TYPE.OUT)[0]}</span></td></tr>`).join('') : '<tr><td colspan="5" class="empty">Belum ada transaksi.</td></tr>';
 
     const c = d.categoryShare || [];
     $('cats').innerHTML = c.length ? c.map((x, i) => `<div class="cr"><div><span>${esc(x.name)}</span><span>${esc(x.percent)}%</span></div><div class="trk"><i style="width:${Math.min(100, +x.percent || 0)}%;background:${COL[i % COL.length]}"></i></div></div>`).join('') : '<p class="empty">Belum ada data stok.</p>';

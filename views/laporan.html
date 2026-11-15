@@ -80,6 +80,20 @@
     #approveOpname { background: var(--green-dark); }
     #rejectOpname { background: var(--red); }
 
+    /* Tab laporan (dalam satu halaman) */
+    .tabs { display: flex; gap: 4px; margin: 20px 0 0; border-bottom: 2px solid var(--border); flex-wrap: wrap; }
+    .tabs button { background: transparent; color: var(--muted); border-radius: 3px 3px 0 0; padding: 12px 20px; font-size: 14px; margin-bottom: -2px; border-bottom: 3px solid transparent; }
+    .tabs button[aria-selected="true"] { color: var(--navy); border-bottom-color: var(--blue); background: #fff; }
+    .report-bar { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin: 20px 0 14px; }
+    .report-bar label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--muted); font-weight: 700; }
+    .report-bar select, .report-bar input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 3px; font-family: inherit; font-size: 13px; background: #fff; color: var(--text); }
+    .report-bar select { min-width: 260px; }
+    .report-bar .print { background: var(--red); } .report-bar .csv { background: var(--green-dark); }
+    td.num, th.num { text-align: right; }
+    tfoot td { font-weight: 700; color: var(--navy); background: var(--th-bg); border-top: 2px solid var(--border); }
+    .note-box { background: #fffaf0; border: 1px solid #fbd38d; color: #7b341e; padding: 10px 12px; border-radius: 4px; font-size: 13px; margin: 0 0 14px; }
+    .print-title { display: none; }
+
     .message { padding: 12px; border-radius: 4px; margin: 14px 0 0; background: #c6f6d5; color: var(--active-text); font-size: 14px; }
     .message.error { background: #fed7d7; color: #9b2c2c; }
     [hidden] { display: none !important; }
@@ -92,7 +106,8 @@
       main { padding: 20px; overflow-y: visible; }
     }
     @media print {
-      header, aside, .actions, .opname-bar, .opname-actions, .message { display: none !important; }
+      header, aside, .actions, .opname-bar, .opname-actions, .message, .tabs, .report-bar, .subtitle { display: none !important; }
+      .print-title { display: block; margin: 0 0 12px; }
       .window { height: auto; } .body { display: block; } main { overflow: visible; padding: 0; }
       body { background: #fff; }
     }
@@ -120,9 +135,19 @@
         <a href="/admin" id="navUsers" hidden>Pengguna</a>
       </aside>
       <main>
-        <h2 class="page-title">Rekapitulasi Stock Opname &amp; Laporan Valuasi Obat Bulanan</h2>
-        <p class="subtitle">Pilih sesi opname, input hasil hitung fisik, lalu ajukan untuk persetujuan Kepala Instalasi Farmasi.</p>
+        <h2 class="page-title">Stock Opname &amp; Laporan Inventaris Obat</h2>
+        <p class="subtitle" id="tabHint">Pilih sesi opname, input hasil hitung fisik, lalu ajukan untuk persetujuan Kepala Instalasi Farmasi.</p>
 
+        <div class="tabs" role="tablist" aria-label="Jenis laporan">
+          <button type="button" role="tab" id="tab-opname" aria-controls="panel-opname" aria-selected="true">Stock Opname</button>
+          <button type="button" role="tab" id="tab-valuasi" aria-controls="panel-valuasi" aria-selected="false">Valuasi Aset</button>
+          <button type="button" role="tab" id="tab-kartu" aria-controls="panel-kartu" aria-selected="false">Kartu Stok</button>
+        </div>
+
+        <div id="message" class="message" role="status" aria-live="polite" hidden></div>
+
+        <section id="panel-opname" role="tabpanel" aria-labelledby="tab-opname">
+        <h3 class="print-title">Laporan Hasil Stock Opname</h3>
         <div class="opname-bar">
           <label for="sessionSelect">Sesi Opname</label>
           <select id="sessionSelect" aria-label="Pilih sesi opname"></select>
@@ -135,8 +160,6 @@
           <button id="printPdf">Cetak PDF</button>
           <button id="exportXls">Ekspor Excel</button>
         </div>
-
-        <div id="message" class="message" role="status" aria-live="polite" hidden></div>
 
         <div class="table-wrap" style="margin-top:14px">
           <table>
@@ -155,6 +178,46 @@
           <button id="approveOpname" hidden>Setujui Penyesuaian</button>
           <button id="rejectOpname" hidden>Tolak</button>
         </div>
+        </section>
+
+        <!-- Laporan Valuasi Aset (REQ-DASH-002, layar SRS 4.1.5) -->
+        <section id="panel-valuasi" role="tabpanel" aria-labelledby="tab-valuasi" hidden>
+          <h3 class="print-title">Laporan Valuasi Aset Obat</h3>
+          <div class="report-bar">
+            <span class="grow" id="valuationInfo"></span>
+            <button type="button" class="print" data-print>Cetak PDF</button>
+            <button type="button" class="csv" id="valuationCsv">Ekspor Excel</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Kode</th><th>Nama Obat</th><th>Satuan</th><th class="num">Total Stok</th><th class="num">Harga Satuan (Rp)</th><th class="num">Nilai Aset (Rp)</th></tr></thead>
+              <tbody id="valuationBody"><tr><td colspan="6">Memuat…</td></tr></tbody>
+              <tfoot><tr><td colspan="5">Total nilai persediaan</td><td class="num" id="valuationTotal">-</td></tr></tfoot>
+            </table>
+          </div>
+        </section>
+
+        <!-- Kartu Stok Digital (REQ-STK-006) -->
+        <section id="panel-kartu" role="tabpanel" aria-labelledby="tab-kartu" hidden>
+          <h3 class="print-title" id="cardPrintTitle">Kartu Stok</h3>
+          <form class="report-bar" id="cardForm">
+            <label>Obat<select id="cardMedicine" required></select></label>
+            <label>Dari tanggal<input type="date" id="cardFrom"></label>
+            <label>Sampai tanggal<input type="date" id="cardTo"></label>
+            <button type="submit">Tampilkan</button>
+            <span class="grow"></span>
+            <button type="button" class="print" data-print>Cetak PDF</button>
+            <button type="button" class="csv" id="cardCsv">Ekspor Excel</button>
+          </form>
+          <p class="note-box" id="cardWarning" hidden></p>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Tanggal</th><th>Referensi</th><th>Batch</th><th>Jenis</th><th class="num">Masuk</th><th class="num">Keluar</th><th class="num">Saldo</th><th>Petugas</th></tr></thead>
+              <tbody id="cardBody"><tr><td colspan="8">Pilih obat lalu tekan Tampilkan.</td></tr></tbody>
+              <tfoot><tr><td colspan="6" id="cardOpening">Saldo awal periode: -</td><td class="num" id="cardFinal">-</td><td></td></tr></tfoot>
+            </table>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -162,7 +225,8 @@
     const $ = id => document.getElementById(id);
     const roleNames = { admin: 'Administrator IT', gudang: 'Staf Gudang', pelayanan: 'Apoteker Pelayanan', kepala_farmasi: 'Kepala Farmasi' };
     const STATUS_LABEL = { draft: 'Draft', pending_approval: 'Menunggu Persetujuan', approved: 'Disetujui', rejected: 'Ditolak' };
-    const OPERATIONAL = ['gudang', 'pelayanan', 'kepala_farmasi'];
+    // Mengikuti backend (SRS 2.3): entry fisik opname oleh Staf Gudang dan Kepala Farmasi.
+    const OPERATIONAL = ['gudang', 'kepala_farmasi'];
 
     const rp = n => Number(n || 0).toLocaleString('id-ID');
     const num = n => Number(n || 0).toLocaleString('en-US');
@@ -397,6 +461,126 @@
       message('Laporan berhasil diekspor (format CSV, dapat dibuka di Excel).');
     });
 
+    // ---- Tab laporan: Stock Opname, Valuasi Aset, Kartu Stok (satu halaman) ----
+    const TABS = {
+      opname: 'Pilih sesi opname, input hasil hitung fisik, lalu ajukan untuk persetujuan Kepala Instalasi Farmasi.',
+      valuasi: 'Nilai persediaan obat aktif berdasarkan stok fisik saat ini dikali harga satuan.',
+      kartu: 'Riwayat mutasi kronologis per obat: saldo awal, masuk, keluar, penyesuaian, dan saldo akhir.'
+    };
+    let valuation = null;   // cache laporan valuasi (juga sumber daftar obat kartu stok)
+    let card = null;        // hasil kartu stok terakhir
+
+    function downloadCsv(name, lines) {
+      const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+      const csv = '﻿' + lines.map(l => l.map(esc).join(',')).join('\r\n');
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+      link.download = name + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+      document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(link.href);
+      message('Laporan berhasil diekspor (format CSV, dapat dibuka di Excel).');
+    }
+    function cellRow(values, classes = []) {
+      const tr = document.createElement('tr');
+      values.forEach((v, i) => { const td = document.createElement('td'); td.textContent = v; if (classes[i]) td.className = classes[i]; tr.append(td); });
+      return tr;
+    }
+    function emptyRow(body, cols, text) { body.replaceChildren(); const tr = cellRow([text]); tr.firstChild.colSpan = cols; body.append(tr); }
+
+    async function loadValuation(force = false) {
+      if (valuation && !force) return valuation;
+      valuation = (await api('/api/laporan/valuation')).data;
+      return valuation;
+    }
+    async function showValuation() {
+      const body = $('valuationBody');
+      try {
+        const v = await loadValuation(true);
+        body.replaceChildren();
+        if (!v.items.length) emptyRow(body, 6, 'Belum ada obat aktif.');
+        for (const it of v.items)
+          body.append(cellRow([it.medicine_code, it.name, it.unit, num(it.total_stock), rp(it.unit_price), rp(it.total_value)],
+            ['', 'name', '', 'num', 'num', 'num']));
+        $('valuationTotal').textContent = rp(v.grand_total);
+        $('valuationInfo').textContent = v.item_count + ' jenis obat aktif · per ' + new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+      } catch (err) { emptyRow(body, 6, 'Gagal memuat valuasi.'); message(err.message, true); }
+    }
+    $('valuationCsv').addEventListener('click', () => {
+      if (!valuation || !valuation.items.length) return message('Tidak ada data untuk diekspor.', true);
+      const lines = [['Kode', 'Nama Obat', 'Satuan', 'Total Stok', 'Harga Satuan (Rp)', 'Nilai Aset (Rp)']];
+      for (const it of valuation.items) lines.push([it.medicine_code, it.name, it.unit, it.total_stock, it.unit_price, it.total_value]);
+      lines.push(['', 'Total nilai persediaan', '', '', '', valuation.grand_total]);
+      downloadCsv('laporan-valuasi-aset', lines);
+    });
+
+    async function prepareCard() {
+      const sel = $('cardMedicine');
+      if (sel.options.length) return;
+      try {
+        const v = await loadValuation();
+        for (const it of v.items) {
+          const opt = document.createElement('option'); opt.value = it.medicine_code;
+          opt.textContent = it.medicine_code + ' — ' + it.name; sel.append(opt);
+        }
+        if (!v.items.length) { const opt = document.createElement('option'); opt.value = ''; opt.textContent = '— belum ada obat —'; sel.append(opt); }
+      } catch (err) { message(err.message, true); }
+    }
+    const TYPE_LABEL = { IN: 'Masuk', OUT: 'Keluar', ADJUSTMENT: 'Penyesuaian' };
+    $('cardForm').addEventListener('submit', async e => {
+      e.preventDefault(); clearMessage();
+      const code = $('cardMedicine').value;
+      if (!code) return message('Pilih obat terlebih dahulu.', true);
+      const params = new URLSearchParams({ medicine_code: code });
+      if ($('cardFrom').value) params.set('from', $('cardFrom').value);
+      if ($('cardTo').value) params.set('to', $('cardTo').value);
+      const body = $('cardBody');
+      try {
+        card = (await api('/api/laporan/stock-card?' + params)).data;
+        body.replaceChildren();
+        if (!card.entries.length) emptyRow(body, 8, 'Tidak ada mutasi pada periode ini.');
+        for (const t of card.entries)
+          body.append(cellRow([t.transaction_date, t.reference_number || '-', t.batch_number, TYPE_LABEL[t.transaction_type] || t.transaction_type,
+            t.change > 0 ? num(t.change) : '', t.change < 0 ? num(-t.change) : '', num(t.closing_balance), t.by || '-'],
+            ['', '', '', '', 'num', 'num', 'num', '']));
+        const unit = card.medicine.unit;
+        $('cardOpening').textContent = 'Saldo awal periode: ' + num(card.opening_balance) + ' ' + unit + ' · Saldo akhir';
+        $('cardFinal').textContent = num(card.final_balance) + ' ' + unit;
+        $('cardPrintTitle').textContent = 'Kartu Stok ' + card.medicine.name + ' (' + card.medicine.medicine_code + ')' +
+          (card.period.from || card.period.to ? ' · ' + (card.period.from || 'awal') + ' s.d. ' + (card.period.to || 'sekarang') : '');
+        // Saldo kartu stok dihitung dari transaksi; beri tahu bila berbeda dengan stok batch saat ini.
+        const stock = (valuation?.items || []).find(it => it.medicine_code === code)?.total_stock;
+        const warn = $('cardWarning');
+        warn.hidden = !(stock !== undefined && !card.period.to && stock !== card.final_balance);
+        if (!warn.hidden) warn.textContent = 'Saldo kartu stok (' + num(card.final_balance) + ') berbeda dengan stok batch saat ini (' + num(stock) +
+          '). Ini terjadi bila ada stok yang dimasukkan tanpa transaksi, misalnya data awal.';
+      } catch (err) { card = null; emptyRow(body, 8, 'Gagal memuat kartu stok.'); message(err.message, true); }
+    });
+    $('cardCsv').addEventListener('click', () => {
+      if (!card || !card.entries.length) return message('Tampilkan kartu stok terlebih dahulu.', true);
+      const lines = [['Kartu Stok', card.medicine.name + ' (' + card.medicine.medicine_code + ')'], ['Saldo awal periode', card.opening_balance],
+        ['Tanggal', 'Referensi', 'Batch', 'Jenis', 'Masuk', 'Keluar', 'Saldo', 'Petugas']];
+      for (const t of card.entries) lines.push([t.transaction_date, t.reference_number || '', t.batch_number, TYPE_LABEL[t.transaction_type] || t.transaction_type,
+        t.change > 0 ? t.change : '', t.change < 0 ? -t.change : '', t.closing_balance, t.by || '']);
+      lines.push(['Saldo akhir', card.final_balance]);
+      downloadCsv('kartu-stok-' + card.medicine.medicine_code, lines);
+    });
+    document.querySelectorAll('[data-print]').forEach(b => b.addEventListener('click', () => window.print()));
+
+    function selectTab(name) {
+      if (!TABS[name]) name = 'opname';
+      for (const key of Object.keys(TABS)) {
+        $('tab-' + key).setAttribute('aria-selected', String(key === name));
+        $('panel-' + key).hidden = key !== name;
+      }
+      $('tabHint').textContent = TABS[name];
+      clearMessage();
+      const url = new URL(location.href);
+      if (name === 'opname') url.searchParams.delete('tab'); else url.searchParams.set('tab', name);
+      history.replaceState(null, '', url);
+      if (name === 'valuasi') showValuation();
+      if (name === 'kartu') prepareCard();
+    }
+    for (const key of Object.keys(TABS)) $('tab-' + key).addEventListener('click', () => selectTab(key));
+
     async function api(url, method = 'GET', body) {
       const response = await fetch(url, { method, credentials: 'same-origin',
         headers: method === 'GET' ? {} : { 'Content-Type': 'application/json' },
@@ -419,6 +603,8 @@
         $('navUsers').hidden = me.role !== 'admin';
       } catch (error) { $('identity').textContent = 'Sesi tidak terhubung'; }
       try { await loadSessions(); } catch (error) { message('Gagal memuat sesi opname: ' + error.message, true); }
+      const tab = new URLSearchParams(location.search).get('tab');
+      if (tab && tab !== 'opname') selectTab(tab);
     })();
   </script>
 </body>

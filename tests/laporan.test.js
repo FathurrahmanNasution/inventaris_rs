@@ -99,8 +99,9 @@ test('stock card builds running balance and honours the period filter', async ()
   assert.equal((await request('/api/laporan/stock-card?medicine_code=MED-A&from=bad', { jwt: token(ID.pelayanan) })).status, 400);
 });
 
-test('creating an opname seeds frozen system balances; Admin IT is denied', async () => {
+test('creating an opname seeds frozen system balances; Admin IT and Apoteker are denied', async () => {
   assert.equal((await request('/api/laporan/opname', { jwt: token(ID.admin), method: 'POST' })).status, 403);
+  assert.equal((await request('/api/laporan/opname', { jwt: token(ID.pelayanan), method: 'POST' })).status, 403); // SRS 2.3
   const created = await request('/api/laporan/opname', { jwt: token(ID.gudang), method: 'POST', body: { reference_number: 'OPN-SEP' } });
   assert.equal(created.status, 201);
   assert.equal(created.data.data.item_count, 4);
@@ -112,6 +113,8 @@ test('creating an opname seeds frozen system balances; Admin IT is denied', asyn
 
 test('physical input requires a note when there is a discrepancy', async () => {
   const id = (await request('/api/laporan/opname', { jwt: token(ID.gudang), method: 'POST' })).data.data.opname_id;
+  const byApoteker = await request('/api/laporan/opname/' + id + '/items', { jwt: token(ID.pelayanan), method: 'PATCH', body: { items: [{ medicine_code: 'MED-B', physical_qty: 40 }] } });
+  assert.equal(byApoteker.status, 403, 'Apoteker tidak mengisi hasil hitung fisik (SRS 2.3)');
   const noNote = await request('/api/laporan/opname/' + id + '/items', { jwt: token(ID.gudang), method: 'PATCH', body: { items: [{ medicine_code: 'MED-B', physical_qty: 35 }] } });
   assert.equal(noNote.status, 400);
   const withNote = await request('/api/laporan/opname/' + id + '/items', { jwt: token(ID.gudang), method: 'PATCH', body: { items: [{ medicine_code: 'MED-B', physical_qty: 35, note: 'rusak 5' }] } });
@@ -166,11 +169,12 @@ test('rejecting a submitted opname leaves stock untouched', async () => {
   assert.equal(db.state.transactions.filter(t => t.transaction_type === 'ADJUSTMENT').length, 0);
 });
 
-test('operational can cancel draft/pending session; admin denied; approved cannot be cancelled', async () => {
+test('gudang/kepala can cancel draft/pending session; admin and apoteker denied; approved cannot be cancelled', async () => {
   // Batalkan sesi draft
   const draft = (await request('/api/laporan/opname', { jwt: token(ID.gudang), method: 'POST' })).data.data.opname_id;
   assert.equal((await request('/api/laporan/opname/' + draft + '/cancel', { jwt: token(ID.admin), method: 'POST' })).status, 403);
-  assert.equal((await request('/api/laporan/opname/' + draft + '/cancel', { jwt: token(ID.pelayanan), method: 'POST' })).status, 200);
+  assert.equal((await request('/api/laporan/opname/' + draft + '/cancel', { jwt: token(ID.pelayanan), method: 'POST' })).status, 403);
+  assert.equal((await request('/api/laporan/opname/' + draft + '/cancel', { jwt: token(ID.kepala), method: 'POST' })).status, 200);
   assert.equal((await request('/api/laporan/opname/' + draft, { jwt: token(ID.gudang) })).status, 404); // terhapus
   // Batalkan sesi yang sudah diajukan (pending_approval)
   const pending = (await request('/api/laporan/opname', { jwt: token(ID.gudang), method: 'POST' })).data.data.opname_id;
