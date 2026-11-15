@@ -566,21 +566,21 @@ const can = rule => USE_MOCK || !me || ROLE_CAN[rule].includes(me.role); // hany
    Reset data contoh: jalankan sessionStorage.removeItem('mockDb') di console, lalu muat ulang. */
 const USE_MOCK = false;
 const MOCK = (() => {
-  const CATS = ['Antibiotik', 'Analgesik', 'Antihipertensi', 'Antidiabetes', 'Antasida', 'Analgesik Injeksi', 'Lainnya'];
+  const CATS = ['Antibiotik', 'Analgesik', 'Antihipertensi', 'Antidiabetik', 'Antasida', 'Analgesik Injeksi', 'Lainnya'];
   const lvl = x => !x.is_active ? 'nonaktif' : (x.total_stock <= 0 || x.total_stock <= x.min_stock * 0.5) ? 'kritis' : x.total_stock <= x.min_stock ? 'menipis' : 'aman';
   const seed = () => {
     const days = { 1: 12, 3: 24, 8: 18, 9: 27, 10: 29 }; // sisa hari batch terdekat (nomor urut obat)
     const meds = [
       ['Amoxicillin 500mg','Antibiotik','Kapsul',450,100,10000], ['Paracetamol 500mg','Analgesik','Tablet',1200,200,3000],
       ['Cefixime 100mg','Antibiotik','Kapsul',85,100,30000], ['Omeprazole 20mg','Antasida','Kapsul',45,50,30000],
-      ['Metformin 500mg','Antidiabetes','Tablet',800,150,2000], ['Amlodipine 10mg','Antihipertensi','Tablet',650,100,3000],
-      ['Ketorolac Inj 30mg','Analgesik Injeksi','Ampul',12,30,35000], ['Paracetamol Syr 60ml','Analgesik','Botol/Sirup',45,20,15000],
+      ['Metformin 500mg','Antidiabetik','Tablet',800,150,2000], ['Amlodipine 10mg','Antihipertensi','Tablet',650,100,3000],
+      ['Ketorolac Inj 30mg','Analgesik Injeksi','Ampul',12,30,35000], ['Paracetamol Syr 60ml','Analgesik','Botol',45,20,15000],
       ['Ranitidine Inj 25mg','Antasida','Ampul',30,20,8000], ['Ceftriaxone Inj 1g','Antibiotik','Vial',12,15,45000],
-      ['Insulin Glargine','Antidiabetes','Vial',2,10,180000], ['Captopril 25mg','Antihipertensi','Tablet',500,100,1500],
+      ['Insulin Glargine','Antidiabetik','Vial',2,10,180000], ['Captopril 25mg','Antihipertensi','Tablet',500,100,1500],
       ['Ibuprofen 400mg','Analgesik','Tablet',900,200,2500], ['Ciprofloxacin 500mg','Antibiotik','Tablet',300,100,6000],
       ['Simvastatin 20mg','Lainnya','Tablet',400,100,4000], ['Salbutamol 2mg','Lainnya','Tablet',250,80,1200],
       ['Dexamethasone Inj','Lainnya','Ampul',120,40,7000], ['Antasida Doen','Antasida','Tablet',600,150,800],
-      ['Glimepiride 2mg','Antidiabetes','Tablet',220,100,3500], ['Furosemide 40mg','Lainnya','Tablet',90,100,1000],
+      ['Glimepiride 2mg','Antidiabetik','Tablet',220,100,3500], ['Furosemide 40mg','Lainnya','Tablet',90,100,1000],
       ['Vitamin B Complex','Lainnya','Strip',150,50,5000]
     ].map((r, i) => ({ medicine_code: 'OBT-' + String(i + 1).padStart(3, '0'), name: r[0], category: r[1], unit: r[2], total_stock: r[3], min_stock: r[4], price: r[5], is_active: true, days: days[i + 1] }));
     const ref = 'RSP-' + today().replace(/-/g, '') + '-';
@@ -654,7 +654,7 @@ async function boot(active) {
 }
 </script>
 <script>
-const LIMIT = 20, UNITS = ['Tablet','Kapsul','Botol/Sirup','Ampul','Vial','Strip','Box'];
+const LIMIT = 20, UNITS = ['Tablet','Kapsul','Botol','Ampul','Vial','Strip','Box'];
 let page = 1, pages = 1, timer;
 const opts = a => a.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
 
@@ -713,7 +713,7 @@ $('frm').onsubmit = async e => {
   await boot('/data-obat');
   $('unit').innerHTML = opts(UNITS);
   const f = new URLSearchParams(location.search).get('filter'); if (f) $('flt').value = f;
-  const DEFAULT_CATS = ['Antibiotik', 'Analgesik', 'Antihipertensi', 'Antidiabetes', 'Antasida', 'Analgesik Injeksi', 'Lainnya']; // cadangan untuk uji tampilan
+  const DEFAULT_CATS = ['Antibiotik', 'Analgesik', 'Antihipertensi', 'Antidiabetik', 'Antasida', 'Analgesik Injeksi', 'Lainnya']; // cadangan untuk uji tampilan
   let n;
   try { n = (await api('/api/categories')).map(x => x.name); }
   catch (e) { n = DEFAULT_CATS; flash($('msg'), 'Kategori belum bisa dimuat dari server, memakai daftar bawaan. ' + e.message); }
