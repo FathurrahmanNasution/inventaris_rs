@@ -257,6 +257,56 @@ function createDb() {
       return { rows };
     }
 
+    // ---- data obat: kategori yang dipakai ----
+    if (q === 'SELECT DISTINCT category FROM medicines ORDER BY category') {
+      return { rows: [...new Set(state.medicines.map(m => m.category))].sort().map(category => ({ category })) };
+    }
+
+    // ---- data obat: daftar dengan stok, kedaluwarsa terdekat, filter, dan halaman ----
+    if (q.startsWith('WITH inventory AS')) {
+      let i = 0;
+      const pattern = q.includes('ILIKE') ? params[i++] : null;
+      const category = q.includes('category = $') ? params[i++] : null;
+      const [limit, offset] = params.slice(-2);
+      const needle = pattern ? pattern.slice(1, -1).replace(/\\(.)/g, '$1').toLowerCase() : null;
+      let rows = state.medicines.map(m => {
+        const live = state.batches.filter(b => b.medicine_code === m.medicine_code && Number(b.current_qty) > 0);
+        return { medicine_code: m.medicine_code, name: m.name, category: m.category, unit: m.unit, price: m.price,
+          min_stock: m.min_stock, is_active: m.status === 'aktif', total_stock: totalStock(m.medicine_code),
+          days: live.length ? Math.min(...live.map(b => dayDiff(b.expired_date, state.today))) : null };
+      });
+      if (needle) rows = rows.filter(r => r.medicine_code.toLowerCase().includes(needle) || r.name.toLowerCase().includes(needle));
+      if (category) rows = rows.filter(r => r.category === category);
+      if (q.includes('WHERE is_active') || q.includes('AND is_active AND') || / AND is_active( |$)/.test(q)) rows = rows.filter(r => r.is_active);
+      if (q.includes('NOT is_active')) rows = rows.filter(r => !r.is_active);
+      if (q.includes('days <= 30')) rows = rows.filter(r => r.is_active && r.days !== null && r.days <= 30);
+      if (q.includes('total_stock <= min_stock') && !q.includes('min_stock * 0.5')) rows = rows.filter(r => r.is_active && r.total_stock <= r.min_stock);
+      if (q.includes('total_stock > min_stock') && !q.includes('min_stock * 0.5')) rows = rows.filter(r => r.is_active && r.total_stock > r.min_stock);
+      if (q.includes('total_stock > min_stock * 0.5')) rows = rows.filter(r => r.is_active && r.total_stock > r.min_stock * 0.5 && r.total_stock <= r.min_stock);
+      if (q.includes('total_stock <= 0 OR')) rows = rows.filter(r => r.is_active && (r.total_stock <= 0 || r.total_stock <= r.min_stock * 0.5));
+      rows.sort((a, b) => a.name.localeCompare(b.name) || a.medicine_code.localeCompare(b.medicine_code));
+      const total = rows.length;
+      return { rows: rows.slice(offset, offset + limit).map(r => ({ ...r, total })) };
+    }
+
+    // ---- data obat: tambah ----
+    if (q.startsWith('INSERT INTO medicines')) {
+      if (state.medicines.some(m => m.medicine_code === params[0])) {
+        const error = new Error('duplicate key value violates unique constraint "medicines_pkey"'); error.code = '23505'; throw error;
+      }
+      const m = { medicine_code: params[0], name: params[1], category: params[2], unit: params[3], price: params[4], min_stock: params[5], status: 'aktif' };
+      state.medicines.push(m);
+      return { rows: [copy(m)] };
+    }
+
+    // ---- data obat: aktif / nonaktif ----
+    if (q.startsWith("UPDATE medicines SET status = CASE WHEN $1 THEN 'aktif' ELSE 'nonaktif' END")) {
+      const m = state.medicines.find(x => x.medicine_code === params[1]);
+      if (!m) return { rows: [] };
+      m.status = params[0] ? 'aktif' : 'nonaktif';
+      return { rows: [{ medicine_code: m.medicine_code, status: m.status }] };
+    }
+
     throw new Error('Unexpected test SQL: ' + q);
   }
 
