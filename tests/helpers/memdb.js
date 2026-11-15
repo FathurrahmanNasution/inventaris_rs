@@ -220,6 +220,43 @@ function createDb() {
       return { rows: [] };
     }
 
+    // ---- dashboard: tanggal hari ini ----
+    if (q === 'SELECT CURRENT_DATE::text AS today') return { rows: [{ today: state.today }] };
+
+    // ---- dashboard: pengeluaran per bulan sejak $1 ----
+    if (q.startsWith("SELECT to_char(transaction_date, 'YYYY-MM') AS month")) {
+      const totals = new Map();
+      for (const t of state.transactions)
+        if (t.transaction_type === 'OUT' && t.transaction_date >= params[0]) {
+          const key = t.transaction_date.slice(0, 7);
+          totals.set(key, (totals.get(key) || 0) + Number(t.quantity));
+        }
+      return { rows: [...totals].sort(([a], [b]) => a.localeCompare(b)).map(([month, qty]) => ({ month, qty })) };
+    }
+
+    // ---- dashboard: transaksi terakhir ----
+    if (q.startsWith('SELECT t.transaction_id, t.created_at, t.reference_number, t.transaction_type')) {
+      const rows = [...state.transactions]
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)) || b.transaction_id - a.transaction_id)
+        .slice(0, params[0])
+        .map(t => {
+          const m = state.medicines.find(x => x.medicine_code === t.medicine_code) || {};
+          return { transaction_id: t.transaction_id, created_at: t.created_at, reference_number: t.reference_number,
+            transaction_type: t.transaction_type, quantity: Number(t.quantity), medicine_name: m.name, unit: m.unit };
+        });
+      return { rows };
+    }
+
+    // ---- dashboard: stok per kategori ----
+    if (q.startsWith('SELECT m.category, COALESCE(SUM(b.current_qty), 0) AS qty')) {
+      const totals = new Map();
+      for (const m of state.medicines.filter(x => x.status === 'aktif'))
+        totals.set(m.category, (totals.get(m.category) || 0) + totalStock(m.medicine_code));
+      const rows = [...totals].map(([category, qty]) => ({ category, qty }))
+        .sort((a, b) => b.qty - a.qty || a.category.localeCompare(b.category));
+      return { rows };
+    }
+
     throw new Error('Unexpected test SQL: ' + q);
   }
 
