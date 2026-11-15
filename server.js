@@ -13,6 +13,11 @@ const db = require('./src/config/db');
 
 // Middleware global
 app.disable('x-powered-by');
+// Di Vercel (VERCEL=1) atau di belakang reverse proxy, percayai header X-Forwarded-*
+// dari proxy agar protokol HTTPS (cek Origin/CSRF) dan IP pengguna (kunci login,
+// audit log) terbaca benar. Saat lokal tanpa proxy, header ini diabaikan.
+const trustProxy = process.env.TRUST_PROXY || (process.env.VERCEL ? '1' : '');
+if (trustProxy) app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
 app.use('/api', protectWrites);
 app.use(express.json({ limit: '16kb' }));
 app.use(cookieParser());

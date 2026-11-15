@@ -2,14 +2,16 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 if (!process.env.DATABASE_URL || process.env.DATABASE_URL.trim() === '') {
-  throw new Error('[Database Error FATAL] DATABASE_URL tidak ditemukan di file .env! Harap setel koneksi Neon DB Anda.');
+  throw new Error('[Database Error FATAL] DATABASE_URL belum diatur. Isi di file .env (lokal) atau Environment Variables Vercel.');
 }
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL.trim(),
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
-  max: 10,
+  // Setiap instance Vercel Function membuka pool sendiri; pakai pool kecil di sana
+  // (dan connection string Neon versi pooled) agar batas koneksi Neon tidak habis.
+  max: Number(process.env.PG_POOL_MAX) || (process.env.VERCEL ? 3 : 10),
   ssl: {
     rejectUnauthorized: false
   }
