@@ -562,9 +562,9 @@ let me = null;
 const can = rule => USE_MOCK || !me || ROLE_CAN[rule].includes(me.role); // hanya kosmetik UI; otorisasi tetap di server
 
 /* ===== DATA CONTOH (dummy) =====
-   Ubah USE_MOCK ke false setelah backend siap. Login/logout/me tetap memakai backend asli.
+   Mode mock dipertahankan untuk pengembangan lokal; halaman produksi memakai backend.
    Reset data contoh: jalankan sessionStorage.removeItem('mockDb') di console, lalu muat ulang. */
-const USE_MOCK = true;
+const USE_MOCK = false;
 const MOCK = (() => {
   const CATS = ['Antibiotik', 'Analgesik', 'Antihipertensi', 'Antidiabetes', 'Antasida', 'Analgesik Injeksi', 'Lainnya'];
   const lvl = x => !x.is_active ? 'nonaktif' : (x.total_stock <= 0 || x.total_stock <= x.min_stock * 0.5) ? 'kritis' : x.total_stock <= x.min_stock ? 'menipis' : 'aman';
@@ -598,7 +598,7 @@ const MOCK = (() => {
     const u = new URL(url, location.origin), p = u.pathname, q = u.searchParams, m = opt.method || 'GET', b = opt.body || {}, meds = DB.meds;
     if (p === '/api/categories') return CATS.map(name => ({ name }));
     if (p === '/api/dashboard') {
-      const act = meds.filter(x => x.is_active), low = act.filter(x => x.total_stock <= x.min_stock), near = act.filter(x => x.days < 30).sort((a, b) => a.days - b.days);
+      const act = meds.filter(x => x.is_active), low = act.filter(x => x.total_stock <= x.min_stock), near = act.filter(x => x.days <= 30).sort((a, b) => a.days - b.days);
       const share = {}; act.forEach(x => share[x.category] = (share[x.category] || 0) + x.total_stock);
       const tot = Object.values(share).reduce((a, b) => a + b, 0) || 1, qty = [144, 180, 168, 228, 204, 252], now = new Date();
       return {
@@ -613,7 +613,7 @@ const MOCK = (() => {
     if (p === '/api/medicines' && m === 'GET') {
       const s = (q.get('search') || '').toLowerCase(), c = q.get('category'), f = q.get('filter'), pg = +q.get('page') || 1, lim = +q.get('limit') || 20;
       const r = meds.filter(x => (!s || x.name.toLowerCase().includes(s) || x.medicine_code.toLowerCase().includes(s)) && (!c || x.category === c)
-        && (q.get('active') !== '1' || x.is_active) && (!f || (f === 'expiring' ? x.is_active && x.days < 30 : f === 'low' ? ['menipis', 'kritis'].includes(lvl(x)) : lvl(x) === f)));
+        && (q.get('active') !== '1' || x.is_active) && (!f || (f === 'expiring' ? x.is_active && x.days <= 30 : f === 'low' ? ['menipis', 'kritis'].includes(lvl(x)) : lvl(x) === f)));
       return { data: r.slice((pg - 1) * lim, pg * lim), total: r.length };
     }
     if (p === '/api/medicines' && m === 'POST') {
@@ -713,7 +713,7 @@ $('frm').onsubmit = async e => {
   await boot('/data-obat');
   $('unit').innerHTML = opts(UNITS);
   const f = new URLSearchParams(location.search).get('filter'); if (f) $('flt').value = f;
-  const DEFAULT_CATS = ['Antibiotik', 'Analgesik', 'Antihipertensi', 'Antidiabetes', 'Antasida', 'Analgesik Injeksi']; // cadangan untuk uji tampilan
+  const DEFAULT_CATS = ['Antibiotik', 'Analgesik', 'Antihipertensi', 'Antidiabetes', 'Antasida', 'Analgesik Injeksi', 'Lainnya']; // cadangan untuk uji tampilan
   let n;
   try { n = (await api('/api/categories')).map(x => x.name); }
   catch (e) { n = DEFAULT_CATS; flash($('msg'), 'Kategori belum bisa dimuat dari server, memakai daftar bawaan. ' + e.message); }

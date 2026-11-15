@@ -76,6 +76,10 @@ const authService = require('./src/services/authService');
 | `POST` | `/api/users/:userId/reset-password` | Khusus `admin` | Reset akun lain dengan `newPassword` |
 | `PATCH` | `/api/auth/password` | Terautentikasi | Ganti sandi sendiri dengan `oldPassword`, `newPassword` |
 | `GET` | `/api/audit-logs?search=&page=1` | Khusus `admin` | Cari aktivitas/username/IP; 50 baris per halaman |
+| `GET` | `/api/medicines?search=&category=&filter=&active=1&page=1&limit=20` | Terautentikasi | Daftar obat dengan `data`, `total`, `total_stock`, `is_active`, dan `days` (kedaluwarsa terdekat) |
+| `POST` | `/api/medicines` | Khusus `kepala_farmasi` | Tambah obat aktif; kategori dan satuan mengikuti daftar tetap |
+| `PATCH` | `/api/medicines/:code/status` | Khusus `kepala_farmasi` | Ubah `is_active` menjadi `true` atau `false` |
+| `GET` | `/api/categories` | Terautentikasi | Daftar kategori tetap untuk formulir dan filter obat |
 
 ---
 
