@@ -512,9 +512,10 @@
       downloadCsv('laporan-valuasi-aset', lines);
     });
 
-    async function prepareCard() {
+    let cardReady = null;   // daftar obat cukup dimuat sekali walau tab dibuka berulang
+    function prepareCard() { return cardReady || (cardReady = fillCardMedicines()); }
+    async function fillCardMedicines() {
       const sel = $('cardMedicine');
-      if (sel.options.length) return;
       try {
         const v = await loadValuation();
         for (const it of v.items) {
@@ -522,7 +523,7 @@
           opt.textContent = it.medicine_code + ' — ' + it.name; sel.append(opt);
         }
         if (!v.items.length) { const opt = document.createElement('option'); opt.value = ''; opt.textContent = '— belum ada obat —'; sel.append(opt); }
-      } catch (err) { message(err.message, true); }
+      } catch (err) { cardReady = null; message(err.message, true); }
     }
     const TYPE_LABEL = { IN: 'Masuk', OUT: 'Keluar', ADJUSTMENT: 'Penyesuaian' };
     $('cardForm').addEventListener('submit', async e => {
@@ -605,6 +606,14 @@
       try { await loadSessions(); } catch (error) { message('Gagal memuat sesi opname: ' + error.message, true); }
       const tab = new URLSearchParams(location.search).get('tab');
       if (tab && tab !== 'opname') selectTab(tab);
+      // Tautan "Kartu Stok" dari Data Obat: /laporan?tab=kartu&medicine=KODE (REQ-MED-007).
+      const medicine = new URLSearchParams(location.search).get('medicine');
+      if (tab === 'kartu' && medicine) {
+        await prepareCard();
+        const sel = $('cardMedicine');
+        if ([...sel.options].some(o => o.value === medicine)) { sel.value = medicine; $('cardForm').requestSubmit(); }
+        else message('Obat ' + medicine + ' tidak ada di daftar kartu stok (hanya obat aktif).', true);
+      }
     })();
   </script>
 </body>
