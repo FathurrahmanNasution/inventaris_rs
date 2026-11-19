@@ -150,6 +150,7 @@ Tes tambahan yang memerlukan PostgreSQL lokal khusus (tidak pernah memakai `DATA
 
 - `npm run test:stock` dengan `STOCK_TEST_DATABASE_URL` ke database `stock_inventory_test`
 - `npm run test:admin` dengan `ADMIN_TEST_DATABASE_URL` ke database `admin_inventory_test`
+- `npm run test:e2e` dengan `E2E_TEST_DATABASE_URL` ke database `e2e_inventory_test`: alur lintas modul (Admin membuat akun, login per peran, tambah obat, stok masuk, stok keluar FEFO, Data Obat/Monitoring/Dashboard/Laporan) di PostgreSQL sungguhan. Tabel opname belum ada di fixture/migrasi, jadi alur opname tidak termasuk.
 - Smoke test browser (Python Playwright + Edge): `python tests/navigation-ui-smoke.py`, `python tests/stock-ui-smoke.py`, `python tests/admin-ui-smoke.py`
 
 ---
