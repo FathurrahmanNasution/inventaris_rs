@@ -4,7 +4,10 @@ const auditService = require('../services/auditService');
 const cookieOptions = () => ({ httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/' });
 async function login(req, res) {
   const { user, token } = await authService.loginUser(req.body || {}, req.ip);
-  res.cookie('token', token, { ...cookieOptions(), maxAge: authService.SESSION_SECONDS * 1000 });
+  // "Ingat saya" tidak dicentang (remember: false) -> cookie sesi browser, hilang saat browser ditutup.
+  // JWT tetap kedaluwarsa maksimal 8 jam (REQ-AUTH-003) pada kedua pilihan.
+  const remember = req.body?.remember !== false;
+  res.cookie('token', token, remember ? { ...cookieOptions(), maxAge: authService.SESSION_SECONDS * 1000 } : cookieOptions());
   res.json({ success: true, message: 'Login berhasil.', data: { user } });
 }
 async function logout(req, res) {

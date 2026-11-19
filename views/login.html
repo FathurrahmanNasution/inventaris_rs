@@ -218,6 +218,7 @@
   .alert.success { background: #dcfce7; color: #15803d; }
   .field input[aria-invalid="true"] { border-color: #dc2626; }
   .btn:disabled { cursor: wait; opacity: .7; }
+  .note { font-size: 10.5px; color: var(--muted); margin-top: 14px; line-height: 1.45; text-align: center; }
 </style>
 </head>
 <body>
@@ -229,10 +230,10 @@
       <h1>Stok obat<br>terpantau,<br>kedaluwarsa<br>tercegah.</h1>
       <p>Masuk untuk mengelola katalog obat, stok masuk dan keluar, serta alert kedaluwarsa instalasi farmasi.</p>
       <div class="stats">
-        <div class="stat"><strong>1.248</strong><span>Jenis obat<br>aktif</span></div>
-        <div class="stat green"><strong>Rp 842,5 jt</strong><span>Nilai aset obat</span></div>
-        <div class="stat orange"><strong>14</strong><span>Stok menipis</span></div>
-        <div class="stat red"><strong>6</strong><span>Batch hampir<br>kedaluwarsa</span></div>
+        <div class="stat"><strong>Katalog obat</strong><span>Kode, kategori, satuan,<br>batas minimum, harga</span></div>
+        <div class="stat green"><strong>Stok FEFO</strong><span>Masuk per batch, keluar<br>dari exp terdekat</span></div>
+        <div class="stat orange"><strong>Alert stok</strong><span>Stok menipis dan<br>batas minimum</span></div>
+        <div class="stat red"><strong>Kedaluwarsa</strong><span>Batch ≤ 30 hari<br>ditandai kritis</span></div>
       </div>
     </div>
   </aside>
@@ -260,10 +261,11 @@
             <input type="password" id="password" name="password" autocomplete="current-password" required>
           </div>
           <div class="row">
-            <label><input type="checkbox" name="remember"> Ingat saya</label>
+            <label><input type="checkbox" name="remember" id="remember"> Ingat saya</label>
           </div>
           <button type="submit" class="btn" id="submitButton">Masuk</button>
         </form>
+        <p class="note">Belum punya akun atau lupa kata sandi? Akun staf dibuat dan direset oleh Administrator IT.</p>
       </section>
     </div>
   </main>
@@ -280,6 +282,13 @@
     message.textContent = text;
     message.className = 'alert show';
   }
+
+  const homeFor = role => role === 'admin' ? '/admin' : '/dashboard';
+  // Sesi masih berlaku: langsung ke halaman sesuai peran (SRS 3.1.2 Sequence 1 langkah 4).
+  fetch('/api/auth/me', { credentials: 'same-origin' })
+    .then(r => r.ok ? r.json() : null)
+    .then(r => { if (r?.data?.user) window.location.replace(homeFor(r.data.user.role)); })
+    .catch(() => {});
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -306,7 +315,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username, password, remember: document.getElementById('remember').checked })
       });
       const result = await response.json();
       if (!response.ok || !result.success) {
@@ -315,7 +324,7 @@
       }
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
-      window.location.assign(result.data.user.role === 'admin' ? '/admin' : '/dashboard');
+      window.location.assign(homeFor(result.data.user.role));
     } catch (error) {
       showError('Tidak dapat terhubung ke server. Silakan coba lagi.');
     } finally {

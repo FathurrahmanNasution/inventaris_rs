@@ -204,6 +204,14 @@ test('audit filtering/pagination validates input and exposes no mutation endpoin
   assert.equal((await request('/api/audit-logs?page=-1', { jwt })).status, 400);
   assert.equal((await request('/api/audit-logs/1', { jwt, method: 'DELETE' })).status, 404);
 });
+test('"Ingat saya" keeps an 8-hour cookie; unchecked gives a browser-session cookie', async () => {
+  const kept = await request('/api/auth/login', { method: 'POST', body: { username: 'test_admin', password: 'Original123!', remember: true } });
+  assert.equal(kept.status, 200); assert.match(kept.headers.get('set-cookie'), /Max-Age=28800/);
+  const session = await request('/api/auth/login', { method: 'POST', body: { username: 'test_admin', password: 'Original123!', remember: false } });
+  assert.equal(session.status, 200);
+  assert.match(session.headers.get('set-cookie'), /HttpOnly/);
+  assert.doesNotMatch(session.headers.get('set-cookie'), /Max-Age|Expires/);
+});
 test('login sets HttpOnly cookie, audits login/logout, and fixes five-failure lockout', async () => {
   const success = await request('/api/auth/login', { method: 'POST', body: { username: 'test_admin', password: 'Original123!' } });
   assert.equal(success.status, 200); assert.match(success.headers.get('set-cookie'), /HttpOnly/);
