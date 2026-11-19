@@ -7,7 +7,8 @@
     "start": "node server.js",
     "test": "node --test",
     "test:stock": "node --test tests/stock.postgres.test.js",
-    "test:admin": "node --test tests/admin.test.js tests/admin.postgres.test.js"
+    "test:admin": "node --test tests/admin.test.js tests/admin.postgres.test.js",
+    "test:e2e": "node --test tests/e2e.postgres.test.js"
   },
   "keywords": [],
   "type": "commonjs",
